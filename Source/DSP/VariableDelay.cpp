@@ -105,6 +105,11 @@ float VariableDelay::readInterp (float delaySamples) const noexcept
     return h00 * y0 + h10 * m0 + h01 * y1v + h11 * m1;
 }
 
+void VariableDelay::setModulationScale (float s)
+{
+    modulationScale = s;
+}
+
 // Cheap LCG producing values in [-1, 1] — deterministic and allocation-free
 float VariableDelay::nextNoise() noexcept
 {

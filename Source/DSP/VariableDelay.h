@@ -33,11 +33,13 @@ private:
     float  readInterp (float delaySamples) const noexcept;
     float  nextNoise() noexcept;
 
+    // Expose modulation scale setter
+    void setModulationScale (float s);
+
+private:
     // Previous applied delay (samples) — used to limit per-sample delay jumps
     float  prevAppliedDelay = 0.0f;
 
     // Modulation scaling applied to the smoothed random walk (0..1)
-    void setModulationScale (float s) { modulationScale = s; }
-private:
     float modulationScale = 1.0f;
 };
