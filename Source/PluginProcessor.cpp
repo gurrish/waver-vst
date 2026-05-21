@@ -145,12 +145,19 @@ void WaverProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         eqFilter.process (juce::dsp::ProcessContextReplacing<float> (block));
     }
 
-    // --- Internal short IR (always applied) ---
+    // --- Internal short IR (always applied) with RMS makeup gain to preserve level ---
     if (! internalIRCoeffs.empty())
     {
         const float mix = internalIRMix;
         auto &hist = internalIRHistory;
         const int L = int (internalIRCoeffs.size());
+
+        // compute pre-IR RMS
+        double sumSqPre = 0.0;
+        for (int i = 0; i < numSamples; ++i)
+            sumSqPre += double (wetBuffer[size_t (i)]) * double (wetBuffer[size_t (i)]);
+        const float preRms = float (std::sqrt (sumSqPre / double (numSamples) + 1e-18));
+
         for (int i = 0; i < numSamples; ++i)
         {
             const float x = -wetBuffer[size_t (i)]; // flip polarity before IR
@@ -169,6 +176,20 @@ void WaverProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
             // mix IR output back into wet buffer
             wetBuffer[size_t (i)] = wetBuffer[size_t (i)] * (1.0f - mix) + y * mix;
+        }
+
+        // compute post-IR RMS
+        double sumSqPost = 0.0;
+        for (int i = 0; i < numSamples; ++i)
+            sumSqPost += double (wetBuffer[size_t (i)]) * double (wetBuffer[size_t (i)]);
+        const float postRms = float (std::sqrt (sumSqPost / double (numSamples) + 1e-18));
+
+        if (postRms > 1e-9f && preRms > 1e-9f)
+        {
+            // makeup gain to preserve overall RMS; cap to ±6 dB
+            const float gain = std::min (2.0f, preRms / postRms);
+            if (gain != 1.0f)
+                juce::FloatVectorOperations::multiply (wetBuffer.data(), gain, numSamples);
         }
     }
 
