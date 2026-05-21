@@ -15,8 +15,8 @@ private:
     WaverProcessor& processor;
 
     // Sliders
-    juce::Slider delaySlider, pitchSlider, driftSlider, levelSlider;
-    juce::Label  delayLabel, pitchLabel, driftLabel, levelLabel;
+    juce::Slider delaySlider, pitchSlider, driftSlider, levelSlider, crossoverSlider;
+    juce::Label  delayLabel, pitchLabel, driftLabel, levelLabel, crossoverLabel;
 
     // Toggles
     juce::ToggleButton eqButton  { "EQ tilt" };
@@ -26,7 +26,7 @@ private:
     using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
     using ButtonAttachment = juce::AudioProcessorValueTreeState::ButtonAttachment;
 
-    SliderAttachment delayAtt, pitchAtt, driftAtt, levelAtt;
+    SliderAttachment delayAtt, pitchAtt, driftAtt, levelAtt, crossoverAtt;
     ButtonAttachment eqAtt, swapAtt;
 
     void setupSlider (juce::Slider& s, juce::Label& l,

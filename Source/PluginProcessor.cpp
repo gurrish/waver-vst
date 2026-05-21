@@ -11,10 +11,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout WaverProcessor::createParame
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
 
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("delay_ms",    "Delay",       msRange,    22.0f));
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("pitch_cents", "Pitch",       centsRange,  8.0f));
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("drift_ms",    "Drift",       driftRange,  1.8f));
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("level_db",    "Level",       levelRange, -1.5f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("delay_ms",      "Delay",     msRange,    22.0f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("pitch_cents",   "Pitch",     centsRange,  8.0f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("drift_ms",      "Drift",     driftRange,  1.8f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("level_db",      "Level",     levelRange, -1.5f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("crossover_hz",  "Crossover",
+                    juce::NormalisableRange<float> (60.0f, 300.0f, 1.0f), 150.0f));
     layout.add (std::make_unique<juce::AudioParameterBool>  ("eq_enabled",  "EQ",          true));
     layout.add (std::make_unique<juce::AudioParameterBool>  ("swap_lr",     "Swap L/R",    false));
 
@@ -48,12 +50,19 @@ void WaverProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     pitchShifter.prepare (sampleRate);
     variableDelay.prepare (sampleRate, 60.0f);
     wetBuffer.resize (size_t (samplesPerBlock), 0.0f);
+    lowBandBuffer.setSize (1, samplesPerBlock);
+    highBandBuffer.setSize (1, samplesPerBlock);
 
     juce::dsp::ProcessSpec spec;
     spec.sampleRate       = sampleRate;
     spec.maximumBlockSize = uint32_t (samplesPerBlock);
     spec.numChannels      = 1;
     eqFilter.prepare (spec);
+
+    lowpassFilter.setType (juce::dsp::LinkwitzRileyFilterType::lowpass);
+    highpassFilter.setType (juce::dsp::LinkwitzRileyFilterType::highpass);
+    lowpassFilter.prepare (spec);
+    highpassFilter.prepare (spec);
 
     // Tell Cubase how much latency we introduce so PDC keeps tracks aligned.
     // The granular pitch shifter pre-fills half its circular buffer as safety margin.
@@ -66,6 +75,8 @@ void WaverProcessor::releaseResources()
 {
     wetBuffer.clear();
     wetBuffer.shrink_to_fit();
+    lowBandBuffer.setSize (0, 0);
+    highBandBuffer.setSize (0, 0);
 }
 
 void WaverProcessor::reset()
@@ -75,6 +86,8 @@ void WaverProcessor::reset()
     pitchShifter.reset();
     variableDelay.reset();
     eqFilter.reset();
+    lowpassFilter.reset();
+    highpassFilter.reset();
 }
 
 double WaverProcessor::getTailLengthSeconds() const
@@ -95,6 +108,10 @@ void WaverProcessor::updateDsp()
     pitchShifter.setCents  (pitchCents);
     variableDelay.setParameters (delayMs, driftMs);
 
+    const float crossoverHz = apvts.getRawParameterValue ("crossover_hz")->load();
+    lowpassFilter.setCutoffFrequency (crossoverHz);
+    highpassFilter.setCutoffFrequency (crossoverHz);
+
     if (eqEnabled)
     {
         // High-shelf cut at 4 kHz: simulates slightly different mic placement
@@ -112,43 +129,57 @@ void WaverProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     const int numSamples = buffer.getNumSamples();
     if (wetBuffer.size() < size_t (numSamples))
         wetBuffer.resize (size_t (numSamples));
+    lowBandBuffer.setSize  (1, numSamples, false, false, true);
+    highBandBuffer.setSize (1, numSamples, false, false, true);
 
     updateDsp();
 
     // Source is always channel 0 (handles both mono and stereo input)
-    const float* dryData = buffer.getReadPointer (0);
+    const float* inputData = buffer.getReadPointer (0);
 
-    // --- Build wet (B) track ---
-    pitchShifter.processBlock (dryData, wetBuffer.data(), numSamples);
+    // --- Split into low band (mono, no processing) and high band (double-tracked)
+    // LR4 crossover sums to flat, so low + high = original with no phase cancellation.
+    lowBandBuffer.copyFrom  (0, 0, inputData, numSamples);
+    highBandBuffer.copyFrom (0, 0, inputData, numSamples);
+
+    {
+        juce::dsp::AudioBlock<float> lowBlock  (lowBandBuffer);
+        juce::dsp::AudioBlock<float> highBlock (highBandBuffer);
+        lowpassFilter .process (juce::dsp::ProcessContextReplacing<float> (lowBlock));
+        highpassFilter.process (juce::dsp::ProcessContextReplacing<float> (highBlock));
+    }
+
+    // --- Build wet (B) high band: pitch shift + variable delay + level + EQ ---
+    const float* dryHigh = highBandBuffer.getReadPointer (0);
+    pitchShifter.processBlock  (dryHigh,        wetBuffer.data(), numSamples);
     variableDelay.processBlock (wetBuffer.data(), wetBuffer.data(), numSamples);
 
-    // Level offset
     const float levelGain = juce::Decibels::decibelsToGain (
         apvts.getRawParameterValue ("level_db")->load());
     juce::FloatVectorOperations::multiply (wetBuffer.data(), levelGain, numSamples);
 
-    // EQ
     if (apvts.getRawParameterValue ("eq_enabled")->load() > 0.5f)
     {
         float* wetPtr = wetBuffer.data();
         juce::dsp::AudioBlock<float> block (&wetPtr, 1, size_t (numSamples));
-        juce::dsp::ProcessContextReplacing<float> ctx (block);
-        eqFilter.process (ctx);
+        eqFilter.process (juce::dsp::ProcessContextReplacing<float> (block));
     }
 
-    // --- Route to stereo output ---
-    const bool swapLR = apvts.getRawParameterValue ("swap_lr")->load() > 0.5f;
+    // --- Assemble stereo output ---
+    // Both channels share the same mono low band → zero phase difference below crossover.
+    // Double-tracking lives only in the high band.
+    const bool swapLR        = apvts.getRawParameterValue ("swap_lr")->load() > 0.5f;
+    const float* lowData     = lowBandBuffer.getReadPointer (0);
+    const float* dryHighData = highBandBuffer.getReadPointer (0);
+    const float* wetHighData = wetBuffer.data();
 
-    if (!swapLR)
+    float*       outL = buffer.getWritePointer (swapLR ? 1 : 0);
+    float*       outR = buffer.getWritePointer (swapLR ? 0 : 1);
+
+    for (int i = 0; i < numSamples; ++i)
     {
-        // Dry → L (ch 0 already has dry), Wet → R (ch 1)
-        buffer.copyFromWithRamp (1, 0, wetBuffer.data(), numSamples, 1.0f, 1.0f);
-    }
-    else
-    {
-        // Wet → L (ch 0), Dry → R (ch 1)
-        buffer.copyFromWithRamp (1, 0, dryData,          numSamples, 1.0f, 1.0f);
-        buffer.copyFromWithRamp (0, 0, wetBuffer.data(), numSamples, 1.0f, 1.0f);
+        outL[i] = lowData[i] + dryHighData[i];
+        outR[i] = lowData[i] + wetHighData[i];
     }
 }
 

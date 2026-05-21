@@ -6,17 +6,19 @@ static const juce::Colour kText   { 0xffdadada };
 
 WaverEditor::WaverEditor (WaverProcessor& p)
     : AudioProcessorEditor (&p), processor (p),
-      delayAtt (p.apvts, "delay_ms",    delaySlider),
-      pitchAtt (p.apvts, "pitch_cents", pitchSlider),
-      driftAtt (p.apvts, "drift_ms",    driftSlider),
-      levelAtt (p.apvts, "level_db",    levelSlider),
-      eqAtt    (p.apvts, "eq_enabled",  eqButton),
-      swapAtt  (p.apvts, "swap_lr",     swapButton)
+      delayAtt     (p.apvts, "delay_ms",     delaySlider),
+      pitchAtt     (p.apvts, "pitch_cents",  pitchSlider),
+      driftAtt     (p.apvts, "drift_ms",     driftSlider),
+      levelAtt     (p.apvts, "level_db",     levelSlider),
+      crossoverAtt (p.apvts, "crossover_hz", crossoverSlider),
+      eqAtt        (p.apvts, "eq_enabled",   eqButton),
+      swapAtt      (p.apvts, "swap_lr",      swapButton)
 {
-    setupSlider (delaySlider, delayLabel, "Delay",  " ms");
-    setupSlider (pitchSlider, pitchLabel, "Pitch",  " ct");
-    setupSlider (driftSlider, driftLabel, "Drift",  " ms");
-    setupSlider (levelSlider, levelLabel, "Level",  " dB");
+    setupSlider (delaySlider,     delayLabel,     "Delay",     " ms");
+    setupSlider (pitchSlider,     pitchLabel,     "Pitch",     " ct");
+    setupSlider (driftSlider,     driftLabel,     "Drift",     " ms");
+    setupSlider (levelSlider,     levelLabel,     "Level",     " dB");
+    setupSlider (crossoverSlider, crossoverLabel, "Crossover", " Hz");
 
     for (auto* btn : { &eqButton, &swapButton })
     {
@@ -26,7 +28,7 @@ WaverEditor::WaverEditor (WaverProcessor& p)
         addAndMakeVisible (btn);
     }
 
-    setSize (420, 240);
+    setSize (500, 260);
 }
 
 void WaverEditor::setupSlider (juce::Slider& s, juce::Label& l,
@@ -68,15 +70,16 @@ void WaverEditor::resized()
 {
     auto area = getLocalBounds().withTrimmedTop (48).reduced (12, 4);
 
-    // Four knobs side by side
-    const int knobW = area.getWidth() / 4;
+    // Five knobs side by side
+    const int knobW = area.getWidth() / 5;
     const int knobH = 140;
     auto knobRow = area.removeFromTop (knobH);
 
-    for (auto [slider, label] : { std::pair {&delaySlider, &delayLabel},
-                                   std::pair {&pitchSlider, &pitchLabel},
-                                   std::pair {&driftSlider, &driftLabel},
-                                   std::pair {&levelSlider, &levelLabel} })
+    for (auto [slider, label] : { std::pair {&delaySlider,     &delayLabel},
+                                   std::pair {&pitchSlider,     &pitchLabel},
+                                   std::pair {&driftSlider,     &driftLabel},
+                                   std::pair {&levelSlider,     &levelLabel},
+                                   std::pair {&crossoverSlider, &crossoverLabel} })
     {
         auto cell = knobRow.removeFromLeft (knobW);
         label->setBounds  (cell.removeFromBottom (18));

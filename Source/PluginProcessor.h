@@ -50,6 +50,11 @@ private:
 
     juce::dsp::IIR::Filter<float> eqFilter;
 
+    // Linkwitz-Riley crossover: low band stays mono (no phase cancellation),
+    // double-tracking is applied only to the high band.
+    juce::dsp::LinkwitzRileyFilter<float> lowpassFilter, highpassFilter;
+    juce::AudioBuffer<float> lowBandBuffer, highBandBuffer;
+
     std::vector<float> wetBuffer;
 
     void updateDsp();
