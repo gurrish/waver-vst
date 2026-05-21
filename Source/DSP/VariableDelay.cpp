@@ -35,11 +35,15 @@ void VariableDelay::reset()
     writePos = 0;
     smoothed = 0.0f;
     lcg      = 0.3f;
+    prevAppliedDelay = baseDelaySamples;
 }
 
 void VariableDelay::processBlock (const float* input, float* output, int numSamples)
 {
     const int bufSize = int (buf.size());
+
+    // Maximum allowed change in delay per sample (in samples) — prevents high-frequency jitter
+    const float maxDeltaPerSample = 0.5f; // tweakable
 
     for (int i = 0; i < numSamples; ++i)
     {
@@ -49,9 +53,18 @@ void VariableDelay::processBlock (const float* input, float* output, int numSamp
         // IIR-smoothed noise: very slow random walk
         smoothed = alpha * smoothed + (1.0f - alpha) * nextNoise();
 
-        const float delaySamples = baseDelaySamples + smoothed * driftScaled;
+        const float desiredDelay = baseDelaySamples + smoothed * driftScaled;
+
+        // Limit per-sample change to avoid rapid jitter that causes HF artifacts
+        float delta = desiredDelay - prevAppliedDelay;
+        if (delta > maxDeltaPerSample) delta = maxDeltaPerSample;
+        else if (delta < -maxDeltaPerSample) delta = -maxDeltaPerSample;
+
+        const float appliedDelay = prevAppliedDelay + delta;
+        prevAppliedDelay = appliedDelay;
+
         // Prevent reading too-close to the write pointer and reduce high-frequency artifacts
-        output[i] = readInterp (std::max (delaySamples, 4.0f));
+        output[i] = readInterp (std::max (appliedDelay, 4.0f));
     }
 }
 

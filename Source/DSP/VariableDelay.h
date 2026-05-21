@@ -32,4 +32,7 @@ private:
 
     float  readInterp (float delaySamples) const noexcept;
     float  nextNoise() noexcept;
+
+    // Previous applied delay (samples) — used to limit per-sample delay jumps
+    float  prevAppliedDelay = 0.0f;
 };
