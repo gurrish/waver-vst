@@ -2,7 +2,7 @@
 
 **VST3 plugin that simulates a double-tracked electric guitar from a single recording.**
 
-Takes a mono guitar signal and outputs a full stereo pair — original take on L, simulated second take on R — saving the time of recording a real second take while preserving a natural, convincing stereo width.
+Takes a mono guitar signal and outputs a processed mono signal — the plugin never mixes the original (dry) audio into its output.
 
 Works in **real-time during playback and mixing**, and also via **Direct Offline Processing** in Cubase (F7). Full PDC (Plugin Delay Compensation) support means Cubase automatically keeps the track in time with the rest of the session.
 
@@ -17,13 +17,15 @@ A real double-track sounds natural because the second take has a slightly differ
 - **Pitch** — small inconsistencies in fretting and picking angle
 - **Tone** — different mic position, different early room reflections
 
-Waver simulates all three independently on the B track:
+Waver processes the input into a dedicated processed (wet) signal. It never mixes the original dry audio into the output. The wet path applies the following stages (mono):
 
-1. **Variable delay** — base Haas delay + slow IIR-smoothed random timing drift (no sine LFO → no chorus artefact)
-2. **Granular pitch shift** — dual-pointer circular buffer with sin² crossfade, tunable in cents
-3. **EQ tilt** — optional high-shelf cut on the B track to simulate a different mic distance
-4. **IR convolution** *(optional)* — convolve the B track with any room/mic impulse response to simulate a physically different recording chain
-5. **Linkwitz-Riley crossover** — the low band is kept mono to prevent phase cancellation on bass frequencies when summed; only the high band is double-tracked
+1. **Granular pitch shift** — dual-pointer circular buffer with sin² crossfade, tunable in cents
+2. **Variable delay** — Haas-style base delay plus slow IIR-smoothed random timing drift (no sine LFO → no chorus artefact)
+3. **EQ tilt** — optional high-shelf cut to simulate a different mic/position
+4. **Internal short IR (FIR)** — a small internal impulse applied to the wet path (polarity is flipped before this internal IR)
+5. **IR convolution (optional)** — convolve the wet signal with any external room/mic impulse response
+
+The processor always outputs the wet/processed signal (mono). To create a stereo image in the host, duplicate the track and pan the original and processed tracks left/right.
 
 ---
 
@@ -37,9 +39,8 @@ Waver simulates all three independently on the B track:
 | **Pitch** | ±25 ct | +8 ct | Detune of the simulated take in cents |
 | **Drift** | 0–5 ms | 1.8 ms | Depth of random timing variation (500 ms smoothing) |
 | **Level** | −12–+6 dB | −1.5 dB | Level of simulated take relative to original |
-| **Crossover** | 60–300 Hz | 150 Hz | Frequency below which low band is kept mono |
-| **EQ tilt** | on/off | on | −2.5 dB high-shelf cut on B track @ 4 kHz |
-| **Swap L/R** | on/off | off | Swap which take goes to L vs R |
+| **EQ tilt** | on/off | on | −2.5 dB high-shelf cut on wet signal @ 4 kHz |
+
 
 ### Impulse Response (optional)
 
@@ -72,7 +73,7 @@ Waver simulates all three independently on the B track:
 5. Pan the original track hard L, the processed track hard R
 6. Done ✅
 
-> The plugin is mono-in / stereo-out. In either mode Cubase handles the channel widening automatically.
+> The plugin is mono-in / mono-out. It outputs only processed (wet) audio and never mixes the original dry signal. To create a stereo image, duplicate the track and pan original/processed left and right in your DAW.
 
 ---
 
@@ -128,11 +129,11 @@ The compiled `Waver.vst3` is output to `build/WaverVST_artefacts/Release/VST3/`.
 | Stage | Algorithm |
 |---|---|
 | Pitch shift | Dual-pointer granular, sin² crossfade, 16384-sample buffer |
-| Timing drift | IIR-smoothed LCG random walk, 500 ms time constant |
-| Crossover | 4th-order Linkwitz-Riley (sums to flat, no phase artefacts) |
-| EQ | Single high-shelf biquad on B track |
-| IR convolution | `juce::dsp::Convolution`, normalised, async load |
-| Output | tanh soft clipper (drive 1.5×, unity-gain preserving) |
+| Timing drift | IIR-smoothed LCG random walk, 500 ms time constant (cubic interpolation in delay reads) |
+| Internal short IR | Small FIR-style impulse applied to wet path; polarity is flipped before this stage |
+| IR convolution | `juce::dsp::Convolution`, normalised, async load (optional external IR)
+| EQ | Single high-shelf biquad on wet signal |
+| Output | tanh soft clipper (drive 1.5×, unity-gain preserving); plugin outputs processed mono only |
 
 ---
 
@@ -143,11 +144,11 @@ waver-vst/
 ├── CMakeLists.txt
 ├── JUCE/                              ← git submodule
 └── Source/
-    ├── PluginProcessor.h / .cpp       ← AudioProcessor, APVTS, crossover, convolution, state
-    ├── PluginEditor.h  / .cpp         ← GUI (5 knobs + 3 toggles + IR section)
+    ├── PluginProcessor.h / .cpp       ← AudioProcessor, APVTS, convolution, state
+    ├── PluginEditor.h  / .cpp         ← GUI (4 knobs + 2 toggles + IR section)
     └── DSP/
         ├── PitchShifter.h / .cpp      ← Granular dual-pointer pitch shift
-        └── VariableDelay.h / .cpp     ← IIR-smoothed variable fractional delay
+        └── VariableDelay.h / .cpp     ← IIR-smoothed variable fractional delay (cubic interpolation)
 ```
 
 ---

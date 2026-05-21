@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Waver — Double-Track Guitar VST3</title>
-  <meta name="description" content="Waver is a VST3 plugin that simulates a double-tracked electric guitar from a single recording. Real-time stereo widening for Cubase — no second take required." />
+  <meta name="description" content="Waver is a VST3 plugin that simulates a double-tracked electric guitar from a single recording. Mono-in / mono-out processed signal — duplicate & pan for stereo." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
@@ -38,7 +38,7 @@
       <h1>One take.<br/><span class="accent">Two perspectives.</span></h1>
       <p class="hero-sub">
         Waver simulates a double-tracked electric guitar from a single recording.
-        Real-time stereo widening — no second take, no timing sync, no bleed.
+        Processes the input into a wet mono signal — it never mixes the original dry audio. Duplicate &amp; pan to create stereo.
       </p>
       <div class="hero-ctas">
         <a class="btn btn-primary" href="#download">
@@ -150,12 +150,12 @@
         <div class="feature-card feature-card--highlight">
           <div class="feature-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path d="M4 4l4 8-4 8M20 4l-4 8 4 8M10 12h4"/>
+              <path d="M12 2c2 0 3 1 4 2 1 1 2 3 2 6 0 4-3 7-6 7s-6-3-6-7c0-3 1-5 2-6 1-1 2-2 4-2z"/>
             </svg>
           </div>
-          <h3>Linkwitz-Riley crossover</h3>
-          <p>Low band stays mono. Only the high band gets double-tracked. Sums to flat — no phase cancellation in the low end when the mix is folded to mono.</p>
-          <div class="feature-tag">Solves the Mimiq problem</div>
+          <h3>Internal short IR</h3>
+          <p>A small FIR-style internal impulse is applied to the wet path to add subtle early-reflection character. The signal is polarity-flipped before feeding the internal IR for a distinct timbral effect.</p>
+          <div class="feature-tag">Low-cost, always-on</div>
         </div>
 
         <div class="feature-card">
@@ -206,49 +206,43 @@
           <div class="chain-label">Mono<br/>guitar in</div>
         </div>
         <div class="chain-arrow">→</div>
+
+        <div class="chain-node chain-node--accent">
+          <div class="chain-icon">↕</div>
+          <div class="chain-label">Pitch shift<br/>+ Variable delay</div>
+        </div>
+        <div class="chain-arrow">→</div>
+
         <div class="chain-node">
-          <div class="chain-icon">⇅</div>
-          <div class="chain-label">LR4<br/>crossover</div>
+          <div class="chain-icon">◎</div>
+          <div class="chain-label">Internal short IR<br/>(polarity flipped)</div>
         </div>
-        <div class="chain-split">
-          <div class="chain-branch chain-branch--top">
-            <div class="chain-arrow">→</div>
-            <div class="chain-node">
-              <div class="chain-icon">≡</div>
-              <div class="chain-label">Low band<br/>(mono, unchanged)</div>
-            </div>
-            <div class="chain-arrow chain-arrow--merge">↘</div>
-          </div>
-          <div class="chain-branch chain-branch--bottom">
-            <div class="chain-arrow">→</div>
-            <div class="chain-node chain-node--accent">
-              <div class="chain-icon">↕</div>
-              <div class="chain-label">Pitch shift<br/>+ drift delay</div>
-            </div>
-            <div class="chain-arrow">→</div>
-            <div class="chain-node chain-node--accent">
-              <div class="chain-icon">◎</div>
-              <div class="chain-label">IR<br/>convolution</div>
-            </div>
-            <div class="chain-arrow">→</div>
-            <div class="chain-node chain-node--accent">
-              <div class="chain-icon">≋</div>
-              <div class="chain-label">EQ tilt<br/>+ level</div>
-            </div>
-            <div class="chain-arrow chain-arrow--merge">↗</div>
-          </div>
+        <div class="chain-arrow">→</div>
+
+        <div class="chain-node">
+          <div class="chain-icon">◎</div>
+          <div class="chain-label">External IR<br/>(optional)</div>
         </div>
+        <div class="chain-arrow">→</div>
+
+        <div class="chain-node">
+          <div class="chain-icon">≋</div>
+          <div class="chain-label">EQ<br/>+ level</div>
+        </div>
+        <div class="chain-arrow">→</div>
+
         <div class="chain-node">
           <div class="chain-icon">∿</div>
           <div class="chain-label">Soft<br/>clipper</div>
         </div>
         <div class="chain-arrow">→</div>
+
         <div class="chain-node chain-node--output">
           <div class="chain-icon">🔊</div>
-          <div class="chain-label">Stereo<br/>L + R out</div>
+          <div class="chain-label">Mono<br/>out (processed)</div>
         </div>
       </div>
-      <p class="chain-note">L = low + dry high &nbsp;·&nbsp; R = low + processed high</p>
+      <p class="chain-note">Plugin outputs processed mono only — duplicate &amp; pan to create stereo in your DAW.</p>
     </div>
   </section>
 
@@ -268,9 +262,7 @@
               <tr><td><strong>Pitch</strong></td><td>±25 ct</td><td>+8 ct</td><td>Detune of simulated take</td></tr>
               <tr><td><strong>Drift</strong></td><td>0–5 ms</td><td>1.8 ms</td><td>Random timing variation depth</td></tr>
               <tr><td><strong>Level</strong></td><td>−12–+6 dB</td><td>−1.5 dB</td><td>Level of simulated take</td></tr>
-              <tr><td><strong>Crossover</strong></td><td>60–300 Hz</td><td>150 Hz</td><td>Mono/stereo split frequency</td></tr>
-              <tr><td><strong>EQ tilt</strong></td><td>on/off</td><td>on</td><td>−2.5 dB shelf cut @ 4 kHz</td></tr>
-              <tr><td><strong>Swap L/R</strong></td><td>on/off</td><td>off</td><td>Swap sides</td></tr>
+              <tr><td><strong>EQ tilt</strong></td><td>on/off</td><td>on</td><td>−2.5 dB shelf cut @ 4 kHz (applied to wet signal)</td></tr>
             </tbody>
           </table>
         </div>
