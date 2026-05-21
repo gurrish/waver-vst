@@ -50,23 +50,46 @@ void VariableDelay::processBlock (const float* input, float* output, int numSamp
         smoothed = alpha * smoothed + (1.0f - alpha) * nextNoise();
 
         const float delaySamples = baseDelaySamples + smoothed * driftScaled;
-        output[i] = readInterp (std::max (delaySamples, 1.0f));
+        // Prevent reading too-close to the write pointer and reduce high-frequency artifacts
+        output[i] = readInterp (std::max (delaySamples, 4.0f));
     }
 }
 
 float VariableDelay::readInterp (float delaySamples) const noexcept
 {
-    const int   bufSize = int (buf.size());
-    float       rp      = float (writePos) - delaySamples;
+    const int bufSize = int (buf.size());
+    float rp = float (writePos) - delaySamples;
 
     while (rp < 0.0f)           rp += float (bufSize);
     while (rp >= float(bufSize)) rp -= float (bufSize);
 
-    const int   idx  = int (rp);
+    const int idx = int (rp);
     const float frac = rp - float (idx);
-    const int   idx1 = (idx + 1) % bufSize;
 
-    return buf[idx] * (1.0f - frac) + buf[idx1] * frac;
+    // Cubic Hermite interpolation using samples ym1, y0, y1, y2
+    int idxm1 = idx - 1; if (idxm1 < 0) idxm1 += bufSize;
+    int idx0  = idx;
+    int idx1  = (idx + 1) % bufSize;
+    int idx2  = (idx + 2) % bufSize;
+
+    const float ym1 = buf[idxm1];
+    const float y0  = buf[idx0];
+    const float y1v = buf[idx1];
+    const float y2  = buf[idx2];
+
+    const float m0 = 0.5f * (y1v - ym1);
+    const float m1 = 0.5f * (y2 - y0);
+
+    const float t = frac;
+    const float t2 = t * t;
+    const float t3 = t2 * t;
+
+    const float h00 = 2.0f*t3 - 3.0f*t2 + 1.0f;
+    const float h10 = t3 - 2.0f*t2 + t;
+    const float h01 = -2.0f*t3 + 3.0f*t2;
+    const float h11 = t3 - t2;
+
+    return h00 * y0 + h10 * m0 + h01 * y1v + h11 * m1;
 }
 
 // Cheap LCG producing values in [-1, 1] — deterministic and allocation-free
