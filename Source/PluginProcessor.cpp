@@ -101,7 +101,8 @@ void WaverProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // EQ
     if (apvts.getRawParameterValue ("eq_enabled")->load() > 0.5f)
     {
-        juce::dsp::AudioBlock<float> block (wetBuffer.data(), 1, size_t (numSamples));
+        float* wetPtr = wetBuffer.data();
+        juce::dsp::AudioBlock<float> block (&wetPtr, 1, size_t (numSamples));
         juce::dsp::ProcessContextReplacing<float> ctx (block);
         eqFilter.process (ctx);
     }

@@ -43,7 +43,7 @@ void WaverEditor::setupSlider (juce::Slider& s, juce::Label& l,
     addAndMakeVisible (s);
 
     l.setText (text, juce::dontSendNotification);
-    l.setFont (juce::Font (12.0f));
+    l.setFont (juce::Font (juce::FontOptions{}.withHeight (12.0f)));
     l.setColour (juce::Label::textColourId, kText);
     l.setJustificationType (juce::Justification::centred);
     addAndMakeVisible (l);
@@ -55,10 +55,10 @@ void WaverEditor::paint (juce::Graphics& g)
     g.fillAll (kBg);
 
     g.setColour (kAccent);
-    g.setFont (juce::Font (20.0f, juce::Font::bold));
+    g.setFont (juce::Font (juce::FontOptions{}.withHeight (20.0f).withStyle ("Bold")));
     g.drawText ("WAVER", getLocalBounds().removeFromTop (36), juce::Justification::centred);
 
-    g.setFont (juce::Font (11.0f));
+    g.setFont (juce::Font (juce::FontOptions{}.withHeight (11.0f)));
     g.setColour (kText.darker (0.4f));
     g.drawText ("double-track simulator", getLocalBounds().withTrimmedTop (26).removeFromTop (18),
                 juce::Justification::centred);
