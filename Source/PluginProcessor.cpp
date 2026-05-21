@@ -70,8 +70,6 @@ void WaverProcessor::releaseResources()
 {
     wetBuffer.clear();
     wetBuffer.shrink_to_fit();
-    lowBandBuffer.setSize (0, 0);
-    highBandBuffer.setSize (0, 0);
     irWetBuffer.setSize    (0, 0);
 }
 
@@ -82,8 +80,6 @@ void WaverProcessor::reset()
     pitchShifter.reset();
     variableDelay.reset();
     eqFilter.reset();
-    lowpassFilter.reset();
-    highpassFilter.reset();
     irConvolution.reset();
 }
 
@@ -122,8 +118,6 @@ void WaverProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     const int numSamples = buffer.getNumSamples();
     if (wetBuffer.size() < size_t (numSamples))
         wetBuffer.resize (size_t (numSamples));
-    lowBandBuffer.setSize  (1, numSamples, false, false, true);
-    highBandBuffer.setSize (1, numSamples, false, false, true);
 
     updateDsp();
 
