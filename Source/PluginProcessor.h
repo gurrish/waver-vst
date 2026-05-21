@@ -38,6 +38,10 @@ public:
     void setStateInformation (const void*, int) override;
 
     //==============================================================================
+    void loadIR (const juce::File& file);
+    juce::String getIRFileName() const { return irFileName; }
+
+    //==============================================================================
     juce::AudioProcessorValueTreeState apvts;
 
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
@@ -54,6 +58,13 @@ private:
     // double-tracking is applied only to the high band.
     juce::dsp::LinkwitzRileyFilter<float> lowpassFilter, highpassFilter;
     juce::AudioBuffer<float> lowBandBuffer, highBandBuffer;
+
+    // IR convolution applied to the B (wet) track only.
+    // Simulates different mic/room response on the simulated take.
+    juce::dsp::Convolution irConvolution;
+    juce::AudioBuffer<float> irWetBuffer;
+    juce::String irFilePath;
+    juce::String irFileName;
 
     std::vector<float> wetBuffer;
 

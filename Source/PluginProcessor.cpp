@@ -17,7 +17,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout WaverProcessor::createParame
     layout.add (std::make_unique<juce::AudioParameterFloat> ("level_db",      "Level",     levelRange, -1.5f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("crossover_hz",  "Crossover",
                     juce::NormalisableRange<float> (60.0f, 300.0f, 1.0f), 150.0f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("ir_mix",        "IR Mix",
+                    juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f), 0.5f));
     layout.add (std::make_unique<juce::AudioParameterBool>  ("eq_enabled",  "EQ",          true));
+    layout.add (std::make_unique<juce::AudioParameterBool>  ("ir_enabled",  "IR",          false));
     layout.add (std::make_unique<juce::AudioParameterBool>  ("swap_lr",     "Swap L/R",    false));
 
     return layout;
@@ -64,6 +67,9 @@ void WaverProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     lowpassFilter.prepare (spec);
     highpassFilter.prepare (spec);
 
+    irConvolution.prepare (spec);
+    irWetBuffer.setSize (1, samplesPerBlock);
+
     // Tell Cubase how much latency we introduce so PDC keeps tracks aligned.
     // The granular pitch shifter pre-fills half its circular buffer as safety margin.
     setLatencySamples (PitchShifter::kBufSize / 2);
@@ -77,6 +83,7 @@ void WaverProcessor::releaseResources()
     wetBuffer.shrink_to_fit();
     lowBandBuffer.setSize (0, 0);
     highBandBuffer.setSize (0, 0);
+    irWetBuffer.setSize    (0, 0);
 }
 
 void WaverProcessor::reset()
@@ -88,6 +95,7 @@ void WaverProcessor::reset()
     eqFilter.reset();
     lowpassFilter.reset();
     highpassFilter.reset();
+    irConvolution.reset();
 }
 
 double WaverProcessor::getTailLengthSeconds() const
@@ -165,6 +173,22 @@ void WaverProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         eqFilter.process (juce::dsp::ProcessContextReplacing<float> (block));
     }
 
+    // --- IR convolution (optional): simulates different mic/room on B track ---
+    if (apvts.getRawParameterValue ("ir_enabled")->load() > 0.5f)
+    {
+        irWetBuffer.setSize (1, numSamples, false, false, true);
+        irWetBuffer.copyFrom (0, 0, wetBuffer.data(), numSamples);
+
+        juce::dsp::AudioBlock<float> irBlock (irWetBuffer);
+        irConvolution.process (juce::dsp::ProcessContextReplacing<float> (irBlock));
+
+        const float irMix = apvts.getRawParameterValue ("ir_mix")->load();
+        const float dryGain = 1.0f - irMix;
+        for (int i = 0; i < numSamples; ++i)
+            wetBuffer[size_t (i)] = wetBuffer[size_t (i)] * dryGain
+                                  + irWetBuffer.getSample (0, i) * irMix;
+    }
+
     // --- Assemble stereo output ---
     // Both channels share the same mono low band → zero phase difference below crossover.
     // Double-tracking lives only in the high band.
@@ -184,9 +208,26 @@ void WaverProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 }
 
 //==============================================================================
+void WaverProcessor::loadIR (const juce::File& file)
+{
+    if (! file.existsAsFile()) return;
+
+    irConvolution.loadImpulseResponse (
+        file,
+        juce::dsp::Convolution::Stereo::no,   // treat IR as mono
+        juce::dsp::Convolution::Trim::yes,     // trim leading/trailing silence
+        0);                                    // max IR length (0 = no limit)
+
+    irFilePath = file.getFullPathName();
+    irFileName = file.getFileName();
+}
+
+//==============================================================================
 void WaverProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
+    if (irFilePath.isNotEmpty())
+        state.setProperty ("irFilePath", irFilePath, nullptr);
     std::unique_ptr<juce::XmlElement> xml (state.createXml());
     copyXmlToBinary (*xml, destData);
 }
@@ -195,7 +236,15 @@ void WaverProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     std::unique_ptr<juce::XmlElement> xmlState (getXmlFromBinary (data, sizeInBytes));
     if (xmlState && xmlState->hasTagName (apvts.state.getType()))
-        apvts.replaceState (juce::ValueTree::fromXml (*xmlState));
+    {
+        auto tree = juce::ValueTree::fromXml (*xmlState);
+        apvts.replaceState (tree);
+
+        // Reload IR if this project had one saved
+        const juce::String savedPath = tree.getProperty ("irFilePath", "");
+        if (savedPath.isNotEmpty())
+            loadIR (juce::File (savedPath));
+    }
 }
 
 //==============================================================================

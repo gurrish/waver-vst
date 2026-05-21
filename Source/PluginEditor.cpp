@@ -3,6 +3,7 @@
 static const juce::Colour kBg     { 0xff1a1a2e };
 static const juce::Colour kAccent { 0xff00d4aa };
 static const juce::Colour kText   { 0xffdadada };
+static const juce::Colour kDim    { 0xff555577 };
 
 WaverEditor::WaverEditor (WaverProcessor& p)
     : AudioProcessorEditor (&p), processor (p),
@@ -11,8 +12,10 @@ WaverEditor::WaverEditor (WaverProcessor& p)
       driftAtt     (p.apvts, "drift_ms",     driftSlider),
       levelAtt     (p.apvts, "level_db",     levelSlider),
       crossoverAtt (p.apvts, "crossover_hz", crossoverSlider),
+      irMixAtt     (p.apvts, "ir_mix",       irMixSlider),
       eqAtt        (p.apvts, "eq_enabled",   eqButton),
-      swapAtt      (p.apvts, "swap_lr",      swapButton)
+      swapAtt      (p.apvts, "swap_lr",      swapButton),
+      irAtt        (p.apvts, "ir_enabled",   irButton)
 {
     setupSlider (delaySlider,     delayLabel,     "Delay",     " ms");
     setupSlider (pitchSlider,     pitchLabel,     "Pitch",     " ct");
@@ -20,15 +23,53 @@ WaverEditor::WaverEditor (WaverProcessor& p)
     setupSlider (levelSlider,     levelLabel,     "Level",     " dB");
     setupSlider (crossoverSlider, crossoverLabel, "Crossover", " Hz");
 
-    for (auto* btn : { &eqButton, &swapButton })
+    // IR mix: compact horizontal slider
+    irMixSlider.setSliderStyle (juce::Slider::LinearHorizontal);
+    irMixSlider.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
+    irMixSlider.setColour (juce::Slider::trackColourId,      kAccent);
+    irMixSlider.setColour (juce::Slider::backgroundColourId, kDim);
+    addAndMakeVisible (irMixSlider);
+
+    for (auto* btn : { &eqButton, &swapButton, &irButton })
     {
-        btn->setColour (juce::ToggleButton::textColourId,   kText);
-        btn->setColour (juce::ToggleButton::tickColourId,   kAccent);
-        btn->setColour (juce::ToggleButton::tickDisabledColourId, kText.darker());
+        btn->setColour (juce::ToggleButton::textColourId,          kText);
+        btn->setColour (juce::ToggleButton::tickColourId,          kAccent);
+        btn->setColour (juce::ToggleButton::tickDisabledColourId,  kText.darker());
         addAndMakeVisible (btn);
     }
 
-    setSize (500, 260);
+    // IR file load button
+    loadIRButton.setColour (juce::TextButton::buttonColourId,   kDim);
+    loadIRButton.setColour (juce::TextButton::textColourOnId,   kText);
+    loadIRButton.setColour (juce::TextButton::textColourOffId,  kText);
+    loadIRButton.onClick = [this]
+    {
+        fileChooser = std::make_unique<juce::FileChooser> (
+            "Load IR File", juce::File::getSpecialLocation (juce::File::userHomeDirectory),
+            "*.wav;*.aif;*.aiff");
+
+        fileChooser->launchAsync (
+            juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+            [this] (const juce::FileChooser& fc)
+            {
+                auto result = fc.getResult();
+                if (result.existsAsFile())
+                {
+                    processor.loadIR (result);
+                    irFileLabel.setText (result.getFileName(), juce::dontSendNotification);
+                }
+            });
+    };
+    addAndMakeVisible (loadIRButton);
+
+    irFileLabel.setText (p.getIRFileName().isNotEmpty() ? p.getIRFileName() : "No IR loaded",
+                         juce::dontSendNotification);
+    irFileLabel.setFont (juce::Font (juce::FontOptions{}.withHeight (11.0f)));
+    irFileLabel.setColour (juce::Label::textColourId, kText.darker (0.3f));
+    irFileLabel.setJustificationType (juce::Justification::centredLeft);
+    addAndMakeVisible (irFileLabel);
+
+    setSize (500, 320);
 }
 
 void WaverEditor::setupSlider (juce::Slider& s, juce::Label& l,
@@ -38,10 +79,10 @@ void WaverEditor::setupSlider (juce::Slider& s, juce::Label& l,
     s.setSliderStyle (juce::Slider::RotaryVerticalDrag);
     s.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 60, 18);
     s.setTextValueSuffix (suffix);
-    s.setColour (juce::Slider::rotarySliderFillColourId,  kAccent);
+    s.setColour (juce::Slider::rotarySliderFillColourId,    kAccent);
     s.setColour (juce::Slider::rotarySliderOutlineColourId, kText.darker (0.6f));
-    s.setColour (juce::Slider::textBoxTextColourId, kText);
-    s.setColour (juce::Slider::textBoxOutlineColourId, juce::Colours::transparentBlack);
+    s.setColour (juce::Slider::textBoxTextColourId,         kText);
+    s.setColour (juce::Slider::textBoxOutlineColourId,      juce::Colours::transparentBlack);
     addAndMakeVisible (s);
 
     l.setText (text, juce::dontSendNotification);
@@ -64,13 +105,17 @@ void WaverEditor::paint (juce::Graphics& g)
     g.setColour (kText.darker (0.4f));
     g.drawText ("double-track simulator", getLocalBounds().withTrimmedTop (26).removeFromTop (18),
                 juce::Justification::centred);
+
+    // Separator above IR section
+    g.setColour (kDim);
+    g.fillRect (getLocalBounds().withTrimmedTop (242).removeFromTop (1).reduced (12, 0));
 }
 
 void WaverEditor::resized()
 {
     auto area = getLocalBounds().withTrimmedTop (48).reduced (12, 4);
 
-    // Five knobs side by side
+    // Row 1: five knobs
     const int knobW = area.getWidth() / 5;
     const int knobH = 140;
     auto knobRow = area.removeFromTop (knobH);
@@ -86,9 +131,20 @@ void WaverEditor::resized()
         slider->setBounds (cell);
     }
 
-    // Toggle buttons
+    // Row 2: toggles
     area.removeFromTop (8);
-    const int btnW = area.getWidth() / 2;
-    eqButton.setBounds   (area.removeFromLeft (btnW).reduced (8, 4));
-    swapButton.setBounds (area.reduced (8, 4));
+    auto toggleRow = area.removeFromTop (28);
+    const int toggleW = toggleRow.getWidth() / 3;
+    eqButton.setBounds   (toggleRow.removeFromLeft (toggleW).reduced (4, 2));
+    swapButton.setBounds (toggleRow.removeFromLeft (toggleW).reduced (4, 2));
+    irButton.setBounds   (toggleRow.reduced (4, 2));
+
+    // Row 3: IR section (load button + mix slider + filename)
+    area.removeFromTop (14);
+    auto irRow = area.removeFromTop (28);
+    loadIRButton.setBounds (irRow.removeFromLeft (90).reduced (0, 2));
+    irRow.removeFromLeft (6);
+    irMixSlider.setBounds  (irRow.removeFromLeft (120).reduced (0, 4));
+    irRow.removeFromLeft (6);
+    irFileLabel.setBounds  (irRow);
 }
