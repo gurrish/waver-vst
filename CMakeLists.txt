@@ -10,7 +10,7 @@ juce_add_plugin(WaverVST
     COMPANY_NAME               "gurrish"
     PLUGIN_MANUFACTURER_CODE   Guri
     PLUGIN_CODE                Wvr1
-    FORMATS                    VST3
+    FORMATS                    VST3 Standalone
     PRODUCT_NAME               "Waver"
     IS_SYNTH                   FALSE
     NEEDS_MIDI_INPUT           FALSE

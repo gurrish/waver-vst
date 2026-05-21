@@ -33,19 +33,28 @@ jobs:
 
       - name: Package
         run: |
-          $vst3 = "build/WaverVST_artefacts/Release/VST3/Waver.vst3"
-          Compress-Archive -Path $vst3 -DestinationPath "Waver-windows-x64.zip"
+          $artefacts = "build/WaverVST_artefacts/Release"
+          Compress-Archive -Path "$artefacts/VST3/Waver.vst3" -DestinationPath "Waver-VST3-windows-x64.zip"
+          Compress-Archive -Path "$artefacts/Standalone/Waver.exe" -DestinationPath "Waver-Standalone-windows-x64.zip"
 
-      - name: Upload build artifact
+      - name: Upload VST3 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Waver-windows-x64
-          path: Waver-windows-x64.zip
+          name: Waver-VST3-windows-x64
+          path: Waver-VST3-windows-x64.zip
+
+      - name: Upload Standalone artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Waver-Standalone-windows-x64
+          path: Waver-Standalone-windows-x64.zip
 
       # Only create a GitHub Release when a version tag is pushed (e.g. v1.0.0)
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: Waver-windows-x64.zip
+          files: |
+            Waver-VST3-windows-x64.zip
+            Waver-Standalone-windows-x64.zip
           generate_release_notes: true
