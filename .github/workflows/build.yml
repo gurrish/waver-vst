@@ -1,0 +1,51 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [master, main]
+    tags: ["v*"]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  build-windows:
+    name: Build VST3 (Windows x64)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout (with JUCE submodule)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Cache CMake build
+        uses: actions/cache@v4
+        with:
+          path: build
+          key: cmake-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}-${{ hashFiles('JUCE/**') }}
+          restore-keys: cmake-${{ runner.os }}-
+
+      - name: Configure
+        run: cmake -B build -G "Visual Studio 17 2022" -A x64
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Package
+        run: |
+          $vst3 = "build/WaverVST_artefacts/Release/VST3/Waver.vst3"
+          Compress-Archive -Path $vst3 -DestinationPath "Waver-windows-x64.zip"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Waver-windows-x64
+          path: Waver-windows-x64.zip
+
+      # Only create a GitHub Release when a version tag is pushed (e.g. v1.0.0)
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Waver-windows-x64.zip
+          generate_release_notes: true
