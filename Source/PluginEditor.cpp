@@ -1,10 +1,5 @@
 #include "PluginEditor.h"
 
-static const juce::Colour kBg     { 0xff1a1a2e };
-static const juce::Colour kAccent { 0xff00d4aa };
-static const juce::Colour kText   { 0xffdadada };
-static const juce::Colour kDim    { 0xff555577 };
-
 WaverEditor::WaverEditor (WaverProcessor& p)
     : AudioProcessorEditor (&p), processor (p),
       delayAtt     (p.apvts, "delay_ms",     delaySlider),
@@ -17,6 +12,8 @@ WaverEditor::WaverEditor (WaverProcessor& p)
       swapAtt      (p.apvts, "swap_lr",      swapButton),
       irAtt        (p.apvts, "ir_enabled",   irButton)
 {
+    setLookAndFeel (&laf);
+
     setupSlider (delaySlider,     delayLabel,     "Delay",     " ms");
     setupSlider (pitchSlider,     pitchLabel,     "Pitch",     " ct");
     setupSlider (driftSlider,     driftLabel,     "Drift",     " ms");
@@ -26,22 +23,12 @@ WaverEditor::WaverEditor (WaverProcessor& p)
     // IR mix: compact horizontal slider
     irMixSlider.setSliderStyle (juce::Slider::LinearHorizontal);
     irMixSlider.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
-    irMixSlider.setColour (juce::Slider::trackColourId,      kAccent);
-    irMixSlider.setColour (juce::Slider::backgroundColourId, kDim);
     addAndMakeVisible (irMixSlider);
 
     for (auto* btn : { &eqButton, &swapButton, &irButton })
-    {
-        btn->setColour (juce::ToggleButton::textColourId,          kText);
-        btn->setColour (juce::ToggleButton::tickColourId,          kAccent);
-        btn->setColour (juce::ToggleButton::tickDisabledColourId,  kText.darker());
         addAndMakeVisible (btn);
-    }
 
-    // IR file load button
-    loadIRButton.setColour (juce::TextButton::buttonColourId,   kDim);
-    loadIRButton.setColour (juce::TextButton::textColourOnId,   kText);
-    loadIRButton.setColour (juce::TextButton::textColourOffId,  kText);
+    // Load IR button
     loadIRButton.onClick = [this]
     {
         fileChooser = std::make_unique<juce::FileChooser> (
@@ -65,11 +52,16 @@ WaverEditor::WaverEditor (WaverProcessor& p)
     irFileLabel.setText (p.getIRFileName().isNotEmpty() ? p.getIRFileName() : "No IR loaded",
                          juce::dontSendNotification);
     irFileLabel.setFont (juce::Font (juce::FontOptions{}.withHeight (11.0f)));
-    irFileLabel.setColour (juce::Label::textColourId, kText.darker (0.3f));
+    irFileLabel.setColour (juce::Label::textColourId, WaverColours::text3);
     irFileLabel.setJustificationType (juce::Justification::centredLeft);
     addAndMakeVisible (irFileLabel);
 
-    setSize (500, 320);
+    setSize (520, 310);
+}
+
+WaverEditor::~WaverEditor()
+{
+    setLookAndFeel (nullptr);
 }
 
 void WaverEditor::setupSlider (juce::Slider& s, juce::Label& l,
@@ -77,17 +69,13 @@ void WaverEditor::setupSlider (juce::Slider& s, juce::Label& l,
                                 const juce::String& suffix)
 {
     s.setSliderStyle (juce::Slider::RotaryVerticalDrag);
-    s.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 60, 18);
+    s.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 60, 16);
     s.setTextValueSuffix (suffix);
-    s.setColour (juce::Slider::rotarySliderFillColourId,    kAccent);
-    s.setColour (juce::Slider::rotarySliderOutlineColourId, kText.darker (0.6f));
-    s.setColour (juce::Slider::textBoxTextColourId,         kText);
-    s.setColour (juce::Slider::textBoxOutlineColourId,      juce::Colours::transparentBlack);
     addAndMakeVisible (s);
 
     l.setText (text, juce::dontSendNotification);
-    l.setFont (juce::Font (juce::FontOptions{}.withHeight (12.0f)));
-    l.setColour (juce::Label::textColourId, kText);
+    l.setFont (juce::Font (juce::FontOptions{}.withHeight (11.0f).withStyle ("SemiBold")));
+    l.setColour (juce::Label::textColourId, WaverColours::text3);
     l.setJustificationType (juce::Justification::centred);
     addAndMakeVisible (l);
 }
@@ -95,27 +83,63 @@ void WaverEditor::setupSlider (juce::Slider& s, juce::Label& l,
 //==============================================================================
 void WaverEditor::paint (juce::Graphics& g)
 {
-    g.fillAll (kBg);
+    using namespace WaverColours;
 
-    g.setColour (kAccent);
-    g.setFont (juce::Font (juce::FontOptions{}.withHeight (20.0f).withStyle ("Bold")));
-    g.drawText ("WAVER", getLocalBounds().removeFromTop (36), juce::Justification::centred);
+    // Background
+    g.fillAll (bg);
 
-    g.setFont (juce::Font (juce::FontOptions{}.withHeight (11.0f)));
-    g.setColour (kText.darker (0.4f));
-    g.drawText ("double-track simulator", getLocalBounds().withTrimmedTop (26).removeFromTop (18),
-                juce::Justification::centred);
+    // Header panel
+    const auto header = bounds.removeFromTop (44).toFloat();
+    g.setColour (surface1);
+    g.fillRect (header);
+    g.setColour (border);
+    g.fillRect (juce::Rectangle<float> (header.getX(), header.getBottom() - 1, header.getWidth(), 1.0f));
+
+    // Logo waveform (mirrors website SVG)
+    {
+        const float cx = 22.0f;
+        const float cy = header.getCentreY();
+        g.setColour (accent);
+        juce::Path wave;
+        const float pts[][2] = {
+            {0,0},{3,-7},{6,0},{9,7},{12,0},{15,-7},{18,0},{19.5f,3},{21,0}
+        };
+        wave.startNewSubPath (cx + pts[0][0], cy + pts[0][1]);
+        for (int i = 1; i < 9; ++i)
+            wave.lineTo (cx + pts[i][0], cy + pts[i][1]);
+        g.strokePath (wave, juce::PathStrokeType (1.8f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    }
+
+    // Plugin name
+    g.setFont (juce::Font (juce::FontOptions{}.withHeight (14.0f).withStyle ("Bold")));
+    g.setColour (text1);
+    g.drawText ("WAVER", 48, 0, 120, 44, juce::Justification::centredLeft);
+
+    // Tagline (right-aligned in header)
+    g.setFont (juce::Font (juce::FontOptions{}.withHeight (10.5f)));
+    g.setColour (text3);
+    g.drawText ("double-track simulator",
+                getWidth() - 160, 0, 150, 44, juce::Justification::centredRight);
+
+    // Knobs section panel
+    const auto kPanel = juce::Rectangle<float> (10, 48, getWidth() - 20.0f, 148);
+    g.setColour (surface1);
+    g.fillRoundedRectangle (kPanel, 8.0f);
+    g.setColour (border);
+    g.drawRoundedRectangle (kPanel, 8.0f, 1.0f);
 
     // Separator above IR section
-    g.setColour (kDim);
-    g.fillRect (getLocalBounds().withTrimmedTop (242).removeFromTop (1).reduced (12, 0));
+    const float sepY = getHeight() - 60.0f;
+    g.setColour (border);
+    g.fillRect (juce::Rectangle<float> (14, sepY, getWidth() - 28.0f, 1.0f));
 }
 
 void WaverEditor::resized()
 {
-    auto area = getLocalBounds().withTrimmedTop (48).reduced (12, 4);
+    const int pad = 14;
+    auto area = getLocalBounds().withTrimmedTop (52).reduced (pad, 0);
 
-    // Row 1: five knobs
+    // Row 1: five knobs inside the panel
     const int knobW = area.getWidth() / 5;
     const int knobH = 140;
     auto knobRow = area.removeFromTop (knobH);
@@ -127,24 +151,24 @@ void WaverEditor::resized()
                                    std::pair {&crossoverSlider, &crossoverLabel} })
     {
         auto cell = knobRow.removeFromLeft (knobW);
-        label->setBounds  (cell.removeFromBottom (18));
-        slider->setBounds (cell);
+        label->setBounds  (cell.removeFromBottom (16));
+        slider->setBounds (cell.reduced (2, 4));
     }
 
     // Row 2: toggles
-    area.removeFromTop (8);
-    auto toggleRow = area.removeFromTop (28);
+    area.removeFromTop (10);
+    auto toggleRow = area.removeFromTop (26);
     const int toggleW = toggleRow.getWidth() / 3;
-    eqButton.setBounds   (toggleRow.removeFromLeft (toggleW).reduced (4, 2));
-    swapButton.setBounds (toggleRow.removeFromLeft (toggleW).reduced (4, 2));
-    irButton.setBounds   (toggleRow.reduced (4, 2));
+    eqButton.setBounds   (toggleRow.removeFromLeft (toggleW).reduced (4, 0));
+    swapButton.setBounds (toggleRow.removeFromLeft (toggleW).reduced (4, 0));
+    irButton.setBounds   (toggleRow.reduced (4, 0));
 
-    // Row 3: IR section (load button + mix slider + filename)
-    area.removeFromTop (14);
+    // Row 3: IR section
+    area.removeFromTop (16);
     auto irRow = area.removeFromTop (28);
-    loadIRButton.setBounds (irRow.removeFromLeft (90).reduced (0, 2));
-    irRow.removeFromLeft (6);
-    irMixSlider.setBounds  (irRow.removeFromLeft (120).reduced (0, 4));
-    irRow.removeFromLeft (6);
+    loadIRButton.setBounds (irRow.removeFromLeft (84).reduced (0, 3));
+    irRow.removeFromLeft (8);
+    irMixSlider.setBounds  (irRow.removeFromLeft (110).reduced (0, 6));
+    irRow.removeFromLeft (8);
     irFileLabel.setBounds  (irRow);
 }
