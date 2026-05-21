@@ -89,7 +89,7 @@ void WaverEditor::paint (juce::Graphics& g)
     g.fillAll (bg);
 
     // Header panel
-    const auto header = bounds.removeFromTop (44).toFloat();
+    const auto header = getLocalBounds().removeFromTop (44).toFloat();
     g.setColour (surface1);
     g.fillRect (header);
     g.setColour (border);
