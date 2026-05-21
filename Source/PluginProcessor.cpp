@@ -15,13 +15,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout WaverProcessor::createParame
     layout.add (std::make_unique<juce::AudioParameterFloat> ("pitch_cents",   "Pitch",     centsRange,  8.0f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("drift_ms",      "Drift",     driftRange,  1.8f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("level_db",      "Level",     levelRange, -1.5f));
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("crossover_hz",  "Crossover",
-                    juce::NormalisableRange<float> (60.0f, 300.0f, 1.0f), 150.0f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("ir_mix",        "IR Mix",
                     juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f), 0.5f));
     layout.add (std::make_unique<juce::AudioParameterBool>  ("eq_enabled",  "EQ",          true));
     layout.add (std::make_unique<juce::AudioParameterBool>  ("ir_enabled",  "IR",          false));
-    layout.add (std::make_unique<juce::AudioParameterBool>  ("swap_lr",     "Swap L/R",    false));
 
     return layout;
 }
@@ -52,19 +49,12 @@ void WaverProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     pitchShifter.prepare (sampleRate);
     variableDelay.prepare (sampleRate, 60.0f);
     wetBuffer.resize (size_t (samplesPerBlock), 0.0f);
-    lowBandBuffer.setSize (1, samplesPerBlock);
-    highBandBuffer.setSize (1, samplesPerBlock);
 
     juce::dsp::ProcessSpec spec;
     spec.sampleRate       = sampleRate;
     spec.maximumBlockSize = uint32_t (samplesPerBlock);
     spec.numChannels      = 1;
     eqFilter.prepare (spec);
-
-    lowpassFilter.setType (juce::dsp::LinkwitzRileyFilterType::lowpass);
-    highpassFilter.setType (juce::dsp::LinkwitzRileyFilterType::highpass);
-    lowpassFilter.prepare (spec);
-    highpassFilter.prepare (spec);
 
     irConvolution.prepare (spec);
     irWetBuffer.setSize (1, samplesPerBlock);
@@ -114,10 +104,6 @@ void WaverProcessor::updateDsp()
 
     pitchShifter.setCents  (pitchCents);
     variableDelay.setParameters (delayMs, driftMs);
-
-    const float crossoverHz = apvts.getRawParameterValue ("crossover_hz")->load();
-    lowpassFilter.setCutoffFrequency (crossoverHz);
-    highpassFilter.setCutoffFrequency (crossoverHz);
 
     if (eqEnabled)
     {

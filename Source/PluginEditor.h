@@ -171,12 +171,11 @@ private:
     WaverLookAndFeel laf;
 
     // Sliders
-    juce::Slider delaySlider, pitchSlider, driftSlider, levelSlider, crossoverSlider, irMixSlider;
-    juce::Label  delayLabel, pitchLabel, driftLabel, levelLabel, crossoverLabel, irMixLabel;
+    juce::Slider delaySlider, pitchSlider, driftSlider, levelSlider, irMixSlider;
+    juce::Label  delayLabel, pitchLabel, driftLabel, levelLabel, irMixLabel;
 
     // Toggles
     juce::ToggleButton eqButton   { "EQ tilt" };
-    juce::ToggleButton swapButton { "Swap L/R" };
     juce::ToggleButton irButton   { "IR" };
 
     // IR section
@@ -188,8 +187,8 @@ private:
     using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
     using ButtonAttachment = juce::AudioProcessorValueTreeState::ButtonAttachment;
 
-    SliderAttachment delayAtt, pitchAtt, driftAtt, levelAtt, crossoverAtt, irMixAtt;
-    ButtonAttachment eqAtt, swapAtt, irAtt;
+    SliderAttachment delayAtt, pitchAtt, driftAtt, levelAtt, irMixAtt;
+    ButtonAttachment eqAtt, irAtt;
 
     void setupSlider (juce::Slider& s, juce::Label& l,
                       const juce::String& text, const juce::String& suffix);

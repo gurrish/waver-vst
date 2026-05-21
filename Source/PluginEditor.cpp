@@ -6,10 +6,8 @@ WaverEditor::WaverEditor (WaverProcessor& p)
       pitchAtt     (p.apvts, "pitch_cents",  pitchSlider),
       driftAtt     (p.apvts, "drift_ms",     driftSlider),
       levelAtt     (p.apvts, "level_db",     levelSlider),
-      crossoverAtt (p.apvts, "crossover_hz", crossoverSlider),
       irMixAtt     (p.apvts, "ir_mix",       irMixSlider),
       eqAtt        (p.apvts, "eq_enabled",   eqButton),
-      swapAtt      (p.apvts, "swap_lr",      swapButton),
       irAtt        (p.apvts, "ir_enabled",   irButton)
 {
     setLookAndFeel (&laf);
@@ -18,14 +16,13 @@ WaverEditor::WaverEditor (WaverProcessor& p)
     setupSlider (pitchSlider,     pitchLabel,     "Pitch",     " ct");
     setupSlider (driftSlider,     driftLabel,     "Drift",     " ms");
     setupSlider (levelSlider,     levelLabel,     "Level",     " dB");
-    setupSlider (crossoverSlider, crossoverLabel, "Crossover", " Hz");
 
     // IR mix: compact horizontal slider
     irMixSlider.setSliderStyle (juce::Slider::LinearHorizontal);
     irMixSlider.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
     addAndMakeVisible (irMixSlider);
 
-    for (auto* btn : { &eqButton, &swapButton, &irButton })
+    for (auto* btn : { &eqButton, &irButton })
         addAndMakeVisible (btn);
 
     // Load IR button
@@ -139,16 +136,15 @@ void WaverEditor::resized()
     const int pad = 14;
     auto area = getLocalBounds().withTrimmedTop (52).reduced (pad, 0);
 
-    // Row 1: five knobs inside the panel
-    const int knobW = area.getWidth() / 5;
+    // Row 1: four knobs inside the panel
+    const int knobW = area.getWidth() / 4;
     const int knobH = 140;
     auto knobRow = area.removeFromTop (knobH);
 
     for (auto [slider, label] : { std::pair {&delaySlider,     &delayLabel},
                                    std::pair {&pitchSlider,     &pitchLabel},
                                    std::pair {&driftSlider,     &driftLabel},
-                                   std::pair {&levelSlider,     &levelLabel},
-                                   std::pair {&crossoverSlider, &crossoverLabel} })
+                                   std::pair {&levelSlider,     &levelLabel} })
     {
         auto cell = knobRow.removeFromLeft (knobW);
         label->setBounds  (cell.removeFromBottom (16));
@@ -158,9 +154,8 @@ void WaverEditor::resized()
     // Row 2: toggles
     area.removeFromTop (10);
     auto toggleRow = area.removeFromTop (26);
-    const int toggleW = toggleRow.getWidth() / 3;
+    const int toggleW = toggleRow.getWidth() / 2;
     eqButton.setBounds   (toggleRow.removeFromLeft (toggleW).reduced (4, 0));
-    swapButton.setBounds (toggleRow.removeFromLeft (toggleW).reduced (4, 0));
     irButton.setBounds   (toggleRow.reduced (4, 0));
 
     // Row 3: IR section
