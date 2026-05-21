@@ -200,10 +200,16 @@ void WaverProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     float*       outL = buffer.getWritePointer (swapLR ? 1 : 0);
     float*       outR = buffer.getWritePointer (swapLR ? 0 : 1);
 
+    // Soft clipper: tanh-based limiter prevents hard clipping on hot recordings.
+    // Tanh saturates gracefully — starts acting around -6dBFS, hard limit at 0dBFS.
+    // Factor 1.5 boosts before tanh so it starts compressing earlier on hot material,
+    // then divides back so unity gain is preserved on normal levels.
+    constexpr float kSoftClipDrive = 1.5f;
+    constexpr float kSoftClipGain  = 1.0f / kSoftClipDrive;
     for (int i = 0; i < numSamples; ++i)
     {
-        outL[i] = lowData[i] + dryHighData[i];
-        outR[i] = lowData[i] + wetHighData[i];
+        outL[i] = std::tanh (kSoftClipDrive * (lowData[i] + dryHighData[i])) * kSoftClipGain;
+        outR[i] = std::tanh (kSoftClipDrive * (lowData[i] + wetHighData[i])) * kSoftClipGain;
     }
 }
 
@@ -214,9 +220,10 @@ void WaverProcessor::loadIR (const juce::File& file)
 
     irConvolution.loadImpulseResponse (
         file,
-        juce::dsp::Convolution::Stereo::no,   // treat IR as mono
-        juce::dsp::Convolution::Trim::yes,     // trim leading/trailing silence
-        0);                                    // max IR length (0 = no limit)
+        juce::dsp::Convolution::Stereo::no,    // treat IR as mono
+        juce::dsp::Convolution::Trim::yes,      // trim leading/trailing silence
+        juce::dsp::Convolution::Normalise::yes, // normalise IR energy — prevents level spikes on hot signals
+        0);                                     // max IR length (0 = no limit)
 
     irFilePath = file.getFullPathName();
     irFileName = file.getFileName();
