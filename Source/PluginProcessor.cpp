@@ -222,8 +222,8 @@ void WaverProcessor::loadIR (const juce::File& file)
         file,
         juce::dsp::Convolution::Stereo::no,    // treat IR as mono
         juce::dsp::Convolution::Trim::yes,      // trim leading/trailing silence
-        juce::dsp::Convolution::Normalise::yes, // normalise IR energy — prevents level spikes on hot signals
-        0);                                     // max IR length (0 = no limit)
+        0,                                      // max IR length (0 = no limit)
+        juce::dsp::Convolution::Normalise::yes); // normalise IR energy — prevents level spikes on hot signals
 
     irFilePath = file.getFullPathName();
     irFileName = file.getFileName();
