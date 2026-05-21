@@ -191,11 +191,9 @@ void WaverProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // Write mono output (do not mix in original dry signal)
     float* out = buffer.getWritePointer (0);
 
-    // Soft clipper: tanh-based limiter prevents hard clipping on hot recordings.
-    constexpr float kSoftClipDrive = 1.5f;
-    constexpr float kSoftClipGain  = 1.0f / kSoftClipDrive;
+    // Soft clipper bypassed for diagnostics — write raw wet buffer directly
     for (int i = 0; i < numSamples; ++i)
-        out[i] = std::tanh (kSoftClipDrive * wetBuffer[size_t (i)]) * kSoftClipGain;
+        out[i] = wetBuffer[size_t (i)];
 }
 
 //==============================================================================
