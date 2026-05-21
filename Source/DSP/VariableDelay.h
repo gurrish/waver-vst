@@ -16,6 +16,9 @@ public:
     /** Process mono audio in-place (input == output is allowed). */
     void processBlock (const float* input, float* output, int numSamples);
 
+    // Expose modulation scale setter
+    void setModulationScale (float s);
+
 private:
     std::vector<float> buf;
     int    writePos         = 0;
@@ -32,9 +35,6 @@ private:
 
     float  readInterp (float delaySamples) const noexcept;
     float  nextNoise() noexcept;
-
-    // Expose modulation scale setter
-    void setModulationScale (float s);
 
 private:
     // Previous applied delay (samples) — used to limit per-sample delay jumps
