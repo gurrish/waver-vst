@@ -50,6 +50,10 @@ void WaverProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     variableDelay.prepare (sampleRate, 60.0f);
     wetBuffer.resize (size_t (samplesPerBlock), 0.0f);
 
+    // Internal short IR coefficients (FIR-style). Small, short impulse response.
+    internalIRCoeffs = { 0.6f, -0.35f, 0.2f, -0.12f, 0.06f };
+    internalIRHistory.clear();
+
     juce::dsp::ProcessSpec spec;
     spec.sampleRate       = sampleRate;
     spec.maximumBlockSize = uint32_t (samplesPerBlock);
@@ -71,6 +75,7 @@ void WaverProcessor::releaseResources()
     wetBuffer.clear();
     wetBuffer.shrink_to_fit();
     irWetBuffer.setSize    (0, 0);
+    internalIRHistory.clear();
 }
 
 void WaverProcessor::reset()
@@ -137,6 +142,33 @@ void WaverProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         float* wetPtr = wetBuffer.data();
         juce::dsp::AudioBlock<float> block (&wetPtr, 1, size_t (numSamples));
         eqFilter.process (juce::dsp::ProcessContextReplacing<float> (block));
+    }
+
+    // --- Internal short IR (always applied) ---
+    if (! internalIRCoeffs.empty())
+    {
+        const float mix = internalIRMix;
+        auto &hist = internalIRHistory;
+        const int L = int (internalIRCoeffs.size());
+        for (int i = 0; i < numSamples; ++i)
+        {
+            const float x = -wetBuffer[size_t (i)]; // flip polarity before IR
+            float y = internalIRCoeffs[0] * x;
+            const int available = int (hist.size());
+            for (int j = 1; j < L; ++j)
+            {
+                if (j - 1 < available)
+                    y += internalIRCoeffs[size_t (j)] * hist[size_t (j - 1)];
+            }
+
+            // update history (most recent at front)
+            hist.push_front (x);
+            if (int (hist.size()) > L - 1)
+                hist.pop_back();
+
+            // mix IR output back into wet buffer
+            wetBuffer[size_t (i)] = wetBuffer[size_t (i)] * (1.0f - mix) + y * mix;
+        }
     }
 
     // IR convolution (optional) — mix IR only with processed wet signal (no dry/original)

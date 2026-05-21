@@ -1,5 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
+#include <deque>
 #include "DSP/PitchShifter.h"
 #include "DSP/VariableDelay.h"
 
@@ -62,6 +63,11 @@ private:
     juce::String irFileName;
 
     std::vector<float> wetBuffer;
+
+    // Internal short IR (small FIR-style impulse) applied to wet path.
+    std::vector<float> internalIRCoeffs;
+    std::deque<float>  internalIRHistory;
+    float               internalIRMix = 0.25f;
 
     void updateDsp();
 
