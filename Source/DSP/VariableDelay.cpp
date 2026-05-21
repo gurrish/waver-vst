@@ -35,6 +35,7 @@ void VariableDelay::reset()
     writePos = 0;
     smoothed = 0.0f;
     lcg      = 0.3f;
+    absolutePos = 0;
 }
 
 void VariableDelay::processBlock (const float* input, float* output, int numSamples)
@@ -49,9 +50,26 @@ void VariableDelay::processBlock (const float* input, float* output, int numSamp
         // IIR-smoothed noise: very slow random walk
         smoothed = alpha * smoothed + (1.0f - alpha) * nextNoise();
 
-        const float delaySamples = baseDelaySamples + smoothed * driftScaled;
+        // Only apply the random drift when the absolute sample position falls within the configured window
+        const bool inWindow = !useDriftWindow || (absolutePos >= driftWindowStart && absolutePos < driftWindowEnd);
+        const float applyFactor = inWindow ? 1.0f : 0.0f;
+
+        const float delaySamples = baseDelaySamples + smoothed * driftScaled * applyFactor;
         output[i] = readInterp (std::max (delaySamples, 1.0f));
+
+        ++absolutePos;
     }
+}
+
+void VariableDelay::setDriftWindow (uint64_t startSample, uint64_t endSample)
+{
+    driftWindowStart = startSample;
+    driftWindowEnd   = endSample;
+}
+
+void VariableDelay::enableDriftWindow (bool shouldEnable)
+{
+    useDriftWindow = shouldEnable;
 }
 
 float VariableDelay::readInterp (float delaySamples) const noexcept

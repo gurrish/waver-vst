@@ -16,6 +16,10 @@ public:
     /** Process mono audio in-place (input == output is allowed). */
     void processBlock (const float* input, float* output, int numSamples);
 
+    // Limit the random drift modulation to an absolute sample window [start, end)
+    void setDriftWindow (uint64_t startSample, uint64_t endSample);
+    void enableDriftWindow (bool shouldEnable);
+
 private:
     std::vector<float> buf;
     int    writePos         = 0;
@@ -29,6 +33,12 @@ private:
     float  normScale        = 0.0f; // scales smoothed output to unit RMS
     float  smoothed         = 0.0f; // running IIR state
     float  lcg              = 0.3f; // cheap deterministic noise state
+
+    // Absolute sample position tracking (incremented by processed samples)
+    uint64_t absolutePos    = 0;
+    uint64_t driftWindowStart = 200000;
+    uint64_t driftWindowEnd   = 400000;
+    bool     useDriftWindow   = true;
 
     float  readInterp (float delaySamples) const noexcept;
     float  nextNoise() noexcept;

@@ -48,6 +48,10 @@ void WaverProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 
     pitchShifter.prepare (sampleRate);
     variableDelay.prepare (sampleRate, 60.0f);
+    // Limit random drift to the absolute sample window [200000, 400000)
+    variableDelay.setDriftWindow (200000, 400000);
+    variableDelay.enableDriftWindow (true);
+
     wetBuffer.resize (size_t (samplesPerBlock), 0.0f);
 
     // Internal short IR coefficients (FIR-style). Small, short impulse response.
