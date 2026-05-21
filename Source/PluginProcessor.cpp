@@ -43,6 +43,8 @@ bool WaverProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 //==============================================================================
 void WaverProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    currentSampleRate = sampleRate;
+
     pitchShifter.prepare (sampleRate);
     variableDelay.prepare (sampleRate, 60.0f);
     wetBuffer.resize (size_t (samplesPerBlock), 0.0f);
@@ -53,7 +55,34 @@ void WaverProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     spec.numChannels      = 1;
     eqFilter.prepare (spec);
 
+    // Tell Cubase how much latency we introduce so PDC keeps tracks aligned.
+    // The granular pitch shifter pre-fills half its circular buffer as safety margin.
+    setLatencySamples (PitchShifter::kBufSize / 2);
+
     updateDsp();
+}
+
+void WaverProcessor::releaseResources()
+{
+    wetBuffer.clear();
+    wetBuffer.shrink_to_fit();
+}
+
+void WaverProcessor::reset()
+{
+    // Called by Cubase on transport stop, loop restart, and project load.
+    // Clears all DSP buffers so stale audio doesn't bleed into the next play.
+    pitchShifter.reset();
+    variableDelay.reset();
+    eqFilter.reset();
+}
+
+double WaverProcessor::getTailLengthSeconds() const
+{
+    // Report the maximum possible delay so Cubase flushes the tail at clip end.
+    const float maxDelayMs = 40.0f + 5.0f; // max delay + max drift headroom
+    return double (PitchShifter::kBufSize / 2) / currentSampleRate
+         + maxDelayMs / 1000.0;
 }
 
 void WaverProcessor::updateDsp()

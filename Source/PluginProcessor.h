@@ -11,7 +11,8 @@ public:
 
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
-    void releaseResources() override {}
+    void releaseResources() override;
+    void reset() override;
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 
     bool isBusesLayoutSupported (const BusesLayout&) const override;
@@ -25,7 +26,7 @@ public:
     bool   acceptsMidi()  const override { return false; }
     bool   producesMidi() const override { return false; }
     bool   isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 0.0; }
+    double getTailLengthSeconds() const override;
 
     int  getNumPrograms()    override { return 1; }
     int  getCurrentProgram() override { return 0; }
@@ -42,6 +43,8 @@ public:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
 private:
+    double currentSampleRate = 44100.0;
+
     PitchShifter  pitchShifter;
     VariableDelay variableDelay;
 
