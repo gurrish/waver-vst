@@ -1,0 +1,24 @@
+# Build output
+build/
+out/
+
+# JUCE submodule (tracked separately)
+# JUCE/
+
+# VS artefacts
+.vs/
+*.user
+*.suo
+*.VC.db
+*.VC.opendb
+ipch/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+
+# OS
+.DS_Store
+Thumbs.db
