@@ -30,19 +30,18 @@ juce::AudioProcessorValueTreeState::ParameterLayout WaverProcessor::createParame
 WaverProcessor::WaverProcessor()
     : AudioProcessor (BusesProperties()
                           .withInput  ("Input",  juce::AudioChannelSet::mono(),   true)
-                          .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
+                          .withOutput ("Output", juce::AudioChannelSet::mono(),   true)),
       apvts (*this, nullptr, "Parameters", createParameterLayout())
 {
 }
 
 bool WaverProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono())
         return false;
 
     const auto& in = layouts.getMainInputChannelSet();
-    return in == juce::AudioChannelSet::mono() ||
-           in == juce::AudioChannelSet::stereo();
+    return in == juce::AudioChannelSet::mono();
 }
 
 //==============================================================================
@@ -142,24 +141,11 @@ void WaverProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
     updateDsp();
 
-    // Source is always channel 0 (handles both mono and stereo input)
+    // Source is always channel 0 (plugin supports only mono in/out)
     const float* inputData = buffer.getReadPointer (0);
 
-    // --- Split into low band (mono, no processing) and high band (double-tracked)
-    // LR4 crossover sums to flat, so low + high = original with no phase cancellation.
-    lowBandBuffer.copyFrom  (0, 0, inputData, numSamples);
-    highBandBuffer.copyFrom (0, 0, inputData, numSamples);
-
-    {
-        juce::dsp::AudioBlock<float> lowBlock  (lowBandBuffer);
-        juce::dsp::AudioBlock<float> highBlock (highBandBuffer);
-        lowpassFilter .process (juce::dsp::ProcessContextReplacing<float> (lowBlock));
-        highpassFilter.process (juce::dsp::ProcessContextReplacing<float> (highBlock));
-    }
-
-    // --- Build wet (B) high band: pitch shift + variable delay + level + EQ ---
-    const float* dryHigh = highBandBuffer.getReadPointer (0);
-    pitchShifter.processBlock  (dryHigh,        wetBuffer.data(), numSamples);
+    // Build wet buffer by processing the entire input (no dry/original mixed in)
+    pitchShifter.processBlock  (inputData,        wetBuffer.data(), numSamples);
     variableDelay.processBlock (wetBuffer.data(), wetBuffer.data(), numSamples);
 
     const float levelGain = juce::Decibels::decibelsToGain (
@@ -173,7 +159,7 @@ void WaverProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         eqFilter.process (juce::dsp::ProcessContextReplacing<float> (block));
     }
 
-    // --- IR convolution (optional): simulates different mic/room on B track ---
+    // IR convolution (optional) — mix IR only with processed wet signal (no dry/original)
     if (apvts.getRawParameterValue ("ir_enabled")->load() > 0.5f)
     {
         irWetBuffer.setSize (1, numSamples, false, false, true);
@@ -183,34 +169,20 @@ void WaverProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         irConvolution.process (juce::dsp::ProcessContextReplacing<float> (irBlock));
 
         const float irMix = apvts.getRawParameterValue ("ir_mix")->load();
-        const float dryGain = 1.0f - irMix;
+        const float wetGain = 1.0f - irMix;
         for (int i = 0; i < numSamples; ++i)
-            wetBuffer[size_t (i)] = wetBuffer[size_t (i)] * dryGain
+            wetBuffer[size_t (i)] = wetBuffer[size_t (i)] * wetGain
                                   + irWetBuffer.getSample (0, i) * irMix;
     }
 
-    // --- Assemble stereo output ---
-    // Both channels share the same mono low band → zero phase difference below crossover.
-    // Double-tracking lives only in the high band.
-    const bool swapLR        = apvts.getRawParameterValue ("swap_lr")->load() > 0.5f;
-    const float* lowData     = lowBandBuffer.getReadPointer (0);
-    const float* dryHighData = highBandBuffer.getReadPointer (0);
-    const float* wetHighData = wetBuffer.data();
-
-    float*       outL = buffer.getWritePointer (swapLR ? 1 : 0);
-    float*       outR = buffer.getWritePointer (swapLR ? 0 : 1);
+    // Write mono output (do not mix in original dry signal)
+    float* out = buffer.getWritePointer (0);
 
     // Soft clipper: tanh-based limiter prevents hard clipping on hot recordings.
-    // Tanh saturates gracefully — starts acting around -6dBFS, hard limit at 0dBFS.
-    // Factor 1.5 boosts before tanh so it starts compressing earlier on hot material,
-    // then divides back so unity gain is preserved on normal levels.
     constexpr float kSoftClipDrive = 1.5f;
     constexpr float kSoftClipGain  = 1.0f / kSoftClipDrive;
     for (int i = 0; i < numSamples; ++i)
-    {
-        outL[i] = std::tanh (kSoftClipDrive * (lowData[i] + dryHighData[i])) * kSoftClipGain;
-        outR[i] = std::tanh (kSoftClipDrive * (lowData[i] + wetHighData[i])) * kSoftClipGain;
-    }
+        out[i] = std::tanh (kSoftClipDrive * wetBuffer[size_t (i)]) * kSoftClipGain;
 }
 
 //==============================================================================
