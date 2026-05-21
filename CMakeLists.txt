@@ -21,6 +21,9 @@ juce_add_plugin(WaverVST
     COPY_PLUGIN_AFTER_BUILD    FALSE
 )
 
+# Generates JuceHeader.h in the build tree so Source files can #include it
+juce_generate_juce_header(WaverVST)
+
 target_sources(WaverVST PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp
