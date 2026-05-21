@@ -5,6 +5,7 @@ WaverEditor::WaverEditor (WaverProcessor& p)
       delayAtt     (p.apvts, "delay_ms",     delaySlider),
       pitchAtt     (p.apvts, "pitch_cents",  pitchSlider),
       driftAtt     (p.apvts, "drift_ms",     driftSlider),
+      modulationAtt(p.apvts, "mod_scale",    modulationSlider),
       levelAtt     (p.apvts, "level_db",     levelSlider),
       irMixAtt     (p.apvts, "ir_mix",       irMixSlider),
       eqAtt        (p.apvts, "eq_enabled",   eqButton),
@@ -15,6 +16,7 @@ WaverEditor::WaverEditor (WaverProcessor& p)
     setupSlider (delaySlider,     delayLabel,     "Delay",     " ms");
     setupSlider (pitchSlider,     pitchLabel,     "Pitch",     " ct");
     setupSlider (driftSlider,     driftLabel,     "Drift",     " ms");
+    setupSlider (modulationSlider,modulationLabel, "Modulation", "");
     setupSlider (levelSlider,     levelLabel,     "Level",     " dB");
 
     // IR mix: compact horizontal slider
@@ -136,14 +138,15 @@ void WaverEditor::resized()
     const int pad = 14;
     auto area = getLocalBounds().withTrimmedTop (52).reduced (pad, 0);
 
-    // Row 1: four knobs inside the panel
-    const int knobW = area.getWidth() / 4;
+    // Row 1: five knobs inside the panel
+    const int knobW = area.getWidth() / 5;
     const int knobH = 140;
     auto knobRow = area.removeFromTop (knobH);
 
     for (auto [slider, label] : { std::pair {&delaySlider,     &delayLabel},
                                    std::pair {&pitchSlider,     &pitchLabel},
                                    std::pair {&driftSlider,     &driftLabel},
+                                   std::pair {&modulationSlider,&modulationLabel},
                                    std::pair {&levelSlider,     &levelLabel} })
     {
         auto cell = knobRow.removeFromLeft (knobW);

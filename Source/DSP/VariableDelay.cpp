@@ -53,7 +53,7 @@ void VariableDelay::processBlock (const float* input, float* output, int numSamp
         // IIR-smoothed noise: very slow random walk
         smoothed = alpha * smoothed + (1.0f - alpha) * nextNoise();
 
-        const float desiredDelay = baseDelaySamples + smoothed * driftScaled;
+        const float desiredDelay = baseDelaySamples + (smoothed * modulationScale) * driftScaled;
 
         // Limit per-sample change to avoid rapid jitter that causes HF artifacts
         float delta = desiredDelay - prevAppliedDelay;

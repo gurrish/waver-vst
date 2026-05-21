@@ -14,6 +14,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout WaverProcessor::createParame
     layout.add (std::make_unique<juce::AudioParameterFloat> ("delay_ms",      "Delay",     msRange,    22.0f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("pitch_cents",   "Pitch",     centsRange,  8.0f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("drift_ms",      "Drift",     driftRange,  1.8f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("mod_scale",     "Modulation", juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f), 1.0f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("level_db",      "Level",     levelRange, -1.5f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("ir_mix",        "IR Mix",
                     juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f), 0.5f));
@@ -102,10 +103,12 @@ void WaverProcessor::updateDsp()
     const float pitchCents = apvts.getRawParameterValue ("pitch_cents")->load();
     const float delayMs    = apvts.getRawParameterValue ("delay_ms")->load();
     const float driftMs    = apvts.getRawParameterValue ("drift_ms")->load();
+    const float modScale   = apvts.getRawParameterValue ("mod_scale")->load();
     const bool  eqEnabled  = apvts.getRawParameterValue ("eq_enabled")->load() > 0.5f;
 
     pitchShifter.setCents  (pitchCents);
     variableDelay.setParameters (delayMs, driftMs);
+    variableDelay.setModulationScale (modScale);
 
     if (eqEnabled)
     {
