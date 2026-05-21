@@ -149,3 +149,12 @@ waver-vst/
         ├── PitchShifter.h / .cpp      ← Granular dual-pointer pitch shift
         └── VariableDelay.h / .cpp     ← IIR-smoothed variable fractional delay
 ```
+
+---
+
+## License
+
+This project is licensed under the **GNU General Public License v3.0** — see [LICENSE](LICENSE) for details.
+
+This is required because the project is built on [JUCE](https://juce.com), which is GPL v3 for open source use. If you want to use this code in a proprietary (closed-source) product, you must obtain a commercial JUCE license from Raw Material Software Limited.
+
