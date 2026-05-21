@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Waver — Double-Track Guitar VST3</title>
+  <meta name="description" content="Waver is a VST3 plugin that simulates a double-tracked electric guitar from a single recording. Real-time stereo widening for Cubase — no second take required." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── Navigation ─────────────────────────────────────────────────── -->
+  <nav id="nav">
+    <div class="nav-inner">
+      <a class="nav-logo" href="#">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <path d="M1 11 Q4 4 7 11 Q10 18 13 11 Q16 4 19 11 Q20.5 14 22 11" stroke="var(--accent)" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+        Waver
+      </a>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how-it-works">How it works</a></li>
+        <li><a href="#download">Download</a></li>
+        <li><a href="https://github.com/gurrish/waver-vst" target="_blank">GitHub</a></li>
+      </ul>
+      <a class="btn btn-sm" href="#download">Download free</a>
+    </div>
+  </nav>
+
+  <!-- ── Hero ──────────────────────────────────────────────────────── -->
+  <section id="hero">
+    <canvas id="waveform-canvas"></canvas>
+    <div class="hero-content">
+      <div class="hero-badge">VST3 · Windows x64 · Free &amp; open source</div>
+      <h1>One take.<br/><span class="accent">Two perspectives.</span></h1>
+      <p class="hero-sub">
+        Waver simulates a double-tracked electric guitar from a single recording.
+        Real-time stereo widening — no second take, no timing sync, no bleed.
+      </p>
+      <div class="hero-ctas">
+        <a class="btn btn-primary" href="#download">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 12L3 7h3V2h4v5h3L8 12zM2 14h12v-1.5H2V14z"/></svg>
+          Download
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/gurrish/waver-vst" target="_blank">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="track-diagram">
+        <div class="track track-a">
+          <span class="track-label">Track A</span>
+          <div class="track-waveform">
+            <svg viewBox="0 0 200 40" preserveAspectRatio="none">
+              <path d="M0,20 L10,20 L12,8 L14,30 L16,12 L18,26 L20,18 L22,22 L24,6 L26,32 L28,14 L30,28 L32,10 L34,24 L36,16 L38,20 L40,20 L42,9 L44,29 L46,13 L48,25 L50,17 L52,21 L54,7 L56,31 L58,15 L60,27 L62,11 L64,23 L66,15 L68,20 L70,20 L72,10 L74,28 L76,14 L78,26 L80,18 L82,22 L84,8 L86,30 L88,16 L90,24 L92,12 L94,28 L96,14 L98,20 L100,20 L102,11 L104,29 L106,13 L108,27 L110,17 L112,23 L114,9 L116,31 L118,15 L120,25 L122,11 L124,23 L126,16 L128,20 L130,20 L132,8 L134,28 L136,12 L138,26 L140,16 L142,22 L144,6 L146,32 L148,14 L150,28 L152,10 L154,24 L156,14 L158,20 L160,20 L162,10 L164,28 L166,14 L168,26 L170,18 L172,22 L174,8 L176,30 L178,16 L180,26 L182,12 L184,24 L186,16 L188,20 L190,20 L200,20" stroke="#888" stroke-width="1.2" fill="none"/>
+            </svg>
+          </div>
+          <div class="track-pan pan-left">◀ L</div>
+        </div>
+        <div class="plugin-box">
+          <span class="plugin-name">WAVER</span>
+          <div class="plugin-dots">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="track track-b">
+          <span class="track-label">Track B <em>(simulated)</em></span>
+          <div class="track-waveform">
+            <svg viewBox="0 0 200 40" preserveAspectRatio="none">
+              <path d="M0,20 L10,20 L13,9 L15,29 L17,13 L19,27 L21,19 L23,21 L25,7 L27,31 L29,15 L31,27 L33,11 L35,25 L37,15 L39,20 L41,20 L43,10 L45,28 L47,14 L49,26 L51,18 L53,22 L55,8 L57,30 L59,16 L61,26 L63,12 L65,24 L67,16 L69,20 L71,20 L73,11 L75,27 L77,15 L79,25 L81,19 L83,21 L85,9 L87,29 L89,17 L91,23 L93,13 L95,27 L97,15 L99,20 L101,20 L103,12 L105,28 L107,14 L109,26 L111,18 L113,22 L115,10 L117,30 L119,16 L121,24 L123,12 L125,22 L127,17 L129,20 L131,20 L133,9 L135,27 L137,13 L139,25 L141,17 L143,21 L145,7 L147,31 L149,15 L151,27 L153,11 L155,23 L157,15 L159,20 L161,20 L163,11 L165,27 L167,15 L169,25 L171,19 L173,21 L175,9 L177,29 L179,17 L181,25 L183,13 L185,23 L187,17 L189,20 L191,20 L200,20" stroke="var(--accent)" stroke-width="1.2" fill="none"/>
+            </svg>
+          </div>
+          <div class="track-pan pan-right">R ▶</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── The problem ────────────────────────────────────────────────── -->
+  <section id="problem">
+    <div class="container">
+      <div class="problem-grid">
+        <div class="problem-text">
+          <h2>Double-tracking takes time.<br/>Waver doesn't.</h2>
+          <p>
+            A genuine double-tracked guitar — the same part played twice, panned hard left and right
+            — is one of the most powerful sounds in rock and metal production. But recording two identical
+            performances takes hours of studio time, and staying tight enough to sound cohesive without
+            sounding like a chorus pedal is harder than it looks.
+          </p>
+          <p>
+            Waver lets you dial in the simulation during playback and mixing, without committing
+            to audio early — and without any second take at all.
+          </p>
+        </div>
+        <div class="problem-stats">
+          <div class="stat">
+            <span class="stat-number">0</span>
+            <span class="stat-label">extra takes required</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number accent">∞</span>
+            <span class="stat-label">times you can tweak it</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number">free</span>
+            <span class="stat-label">always</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Features ──────────────────────────────────────────────────── -->
+  <section id="features">
+    <div class="container">
+      <div class="section-header">
+        <h2>Everything the real thing has</h2>
+        <p>Simulates the three physical reasons a second take sounds different</p>
+      </div>
+      <div class="features-grid">
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M2 12 Q6 4 10 12 Q14 20 18 12 Q20 8 22 12"/>
+            </svg>
+          </div>
+          <h3>Variable delay + drift</h3>
+          <p>Haas delay (5–40 ms) plus an IIR-smoothed random walk simulates the natural timing imprecision of a real second performance — not a chorus sine LFO.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M6.3 6.3a8 8 0 0 0 0 11.4M17.7 6.3a8 8 0 0 1 0 11.4"/>
+              <path d="M3.5 3.5a13 13 0 0 0 0 17M20.5 3.5a13 13 0 0 1 0 17"/>
+            </svg>
+          </div>
+          <h3>Pitch detune</h3>
+          <p>Granular dual-pointer pitch shift with sin² crossfade. Up to ±25 cents. No STFT, no smearing — works on fully distorted signals.</p>
+        </div>
+
+        <div class="feature-card feature-card--highlight">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M4 4l4 8-4 8M20 4l-4 8 4 8M10 12h4"/>
+            </svg>
+          </div>
+          <h3>Linkwitz-Riley crossover</h3>
+          <p>Low band stays mono. Only the high band gets double-tracked. Sums to flat — no phase cancellation in the low end when the mix is folded to mono.</p>
+          <div class="feature-tag">Solves the Mimiq problem</div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/>
+            </svg>
+          </div>
+          <h3>IR convolution</h3>
+          <p>Load any WAV impulse response — different mic position, different room, different cab — and convolve it onto the simulated take only. Normalised on load.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <path d="M9 9h6M9 12h6M9 15h4"/>
+            </svg>
+          </div>
+          <h3>Cubase-native</h3>
+          <p>Full PDC support — latency reported so Cubase compensates automatically. Works as a real-time insert or via Direct Offline Processing (F7). Project state and IR path save with the session.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+          </div>
+          <h3>Hot signal safe</h3>
+          <p>tanh soft clipper on the output stage — starts acting at −6 dBFS and saturates gracefully, so hot or already-distorted recordings won't hard-clip through the chain.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── How it works ──────────────────────────────────────────────── -->
+  <section id="how-it-works">
+    <div class="container">
+      <div class="section-header">
+        <h2>Signal chain</h2>
+        <p>Mono in. The signal is split and processed separately for L and R.</p>
+      </div>
+      <div class="chain">
+        <div class="chain-node chain-node--source">
+          <div class="chain-icon">🎸</div>
+          <div class="chain-label">Mono<br/>guitar in</div>
+        </div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node">
+          <div class="chain-icon">⇅</div>
+          <div class="chain-label">LR4<br/>crossover</div>
+        </div>
+        <div class="chain-split">
+          <div class="chain-branch chain-branch--top">
+            <div class="chain-arrow">→</div>
+            <div class="chain-node">
+              <div class="chain-icon">≡</div>
+              <div class="chain-label">Low band<br/>(mono, unchanged)</div>
+            </div>
+            <div class="chain-arrow chain-arrow--merge">↘</div>
+          </div>
+          <div class="chain-branch chain-branch--bottom">
+            <div class="chain-arrow">→</div>
+            <div class="chain-node chain-node--accent">
+              <div class="chain-icon">↕</div>
+              <div class="chain-label">Pitch shift<br/>+ drift delay</div>
+            </div>
+            <div class="chain-arrow">→</div>
+            <div class="chain-node chain-node--accent">
+              <div class="chain-icon">◎</div>
+              <div class="chain-label">IR<br/>convolution</div>
+            </div>
+            <div class="chain-arrow">→</div>
+            <div class="chain-node chain-node--accent">
+              <div class="chain-icon">≋</div>
+              <div class="chain-label">EQ tilt<br/>+ level</div>
+            </div>
+            <div class="chain-arrow chain-arrow--merge">↗</div>
+          </div>
+        </div>
+        <div class="chain-node">
+          <div class="chain-icon">∿</div>
+          <div class="chain-label">Soft<br/>clipper</div>
+        </div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-node chain-node--output">
+          <div class="chain-icon">🔊</div>
+          <div class="chain-label">Stereo<br/>L + R out</div>
+        </div>
+      </div>
+      <p class="chain-note">L = low + dry high &nbsp;·&nbsp; R = low + processed high</p>
+    </div>
+  </section>
+
+  <!-- ── Parameters ────────────────────────────────────────────────── -->
+  <section id="parameters">
+    <div class="container">
+      <div class="section-header">
+        <h2>Parameters</h2>
+      </div>
+      <div class="params-grid">
+        <div class="param-group">
+          <h3 class="param-group-title">Double-tracking</h3>
+          <table class="param-table">
+            <thead><tr><th>Control</th><th>Range</th><th>Default</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Delay</strong></td><td>5–40 ms</td><td>22 ms</td><td>Base Haas delay</td></tr>
+              <tr><td><strong>Pitch</strong></td><td>±25 ct</td><td>+8 ct</td><td>Detune of simulated take</td></tr>
+              <tr><td><strong>Drift</strong></td><td>0–5 ms</td><td>1.8 ms</td><td>Random timing variation depth</td></tr>
+              <tr><td><strong>Level</strong></td><td>−12–+6 dB</td><td>−1.5 dB</td><td>Level of simulated take</td></tr>
+              <tr><td><strong>Crossover</strong></td><td>60–300 Hz</td><td>150 Hz</td><td>Mono/stereo split frequency</td></tr>
+              <tr><td><strong>EQ tilt</strong></td><td>on/off</td><td>on</td><td>−2.5 dB shelf cut @ 4 kHz</td></tr>
+              <tr><td><strong>Swap L/R</strong></td><td>on/off</td><td>off</td><td>Swap sides</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="param-group">
+          <h3 class="param-group-title">Impulse Response</h3>
+          <table class="param-table">
+            <thead><tr><th>Control</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Load IR</strong></td><td>Load a WAV impulse response (room, mic, cabinet)</td></tr>
+              <tr><td><strong>IR enabled</strong></td><td>Toggle convolution on/off without unloading</td></tr>
+              <tr><td><strong>IR mix</strong></td><td>0–100 % wet/dry blend on the B track</td></tr>
+            </tbody>
+          </table>
+          <div class="ir-tip">
+            <strong>💡 IR tips</strong>
+            <ul>
+              <li>Short room (20–80 ms) → different room "feel" on the take</li>
+              <li>Mic scatter (&lt; 10 ms) → different mic position/angle</li>
+              <li>Guitar cab IR → sounds like a second amp position</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Download ──────────────────────────────────────────────────── -->
+  <section id="download">
+    <div class="container">
+      <div class="download-box">
+        <div class="download-text">
+          <div class="download-badge">Latest release</div>
+          <h2>Download Waver</h2>
+          <p>Free and open source. Windows VST3, x64. Tested in Cubase 12/13.</p>
+          <div class="download-steps">
+            <div class="step">
+              <span class="step-num">1</span>
+              <span>Download and unzip <code>Waver-windows-x64.zip</code></span>
+            </div>
+            <div class="step">
+              <span class="step-num">2</span>
+              <span>Copy <code>Waver.vst3</code> to <code>C:\Program Files\Common Files\VST3\</code></span>
+            </div>
+            <div class="step">
+              <span class="step-num">3</span>
+              <span>Rescan plugins in Cubase: Studio → VST Plug-in Manager → Rescan</span>
+            </div>
+          </div>
+          <div class="download-ctas">
+            <a class="btn btn-primary btn-lg" href="https://github.com/gurrish/waver-vst/releases/latest" target="_blank">
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 12L3 7h3V2h4v5h3L8 12zM2 14h12v-1.5H2V14z"/></svg>
+              Download latest release
+            </a>
+            <a class="btn btn-ghost" href="https://github.com/gurrish/waver-vst" target="_blank">
+              View source on GitHub
+            </a>
+          </div>
+        </div>
+        <div class="download-requirements">
+          <h4>Requirements</h4>
+          <ul>
+            <li>Windows 10 / 11, 64-bit</li>
+            <li>VST3-compatible DAW (Cubase, Nuendo, Reaper, Studio One…)</li>
+            <li>No third-party runtime required</li>
+          </ul>
+          <h4>Build from source</h4>
+          <ul>
+            <li>Visual Studio 2022+</li>
+            <li>CMake ≥ 3.22</li>
+            <li>JUCE (git submodule, included)</li>
+          </ul>
+          <pre><code>git clone --recurse-submodules \
+  https://github.com/gurrish/waver-vst
+cmake -B build -G "Visual Studio 17 2022" -A x64
+cmake --build build --config Release</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Footer ────────────────────────────────────────────────────── -->
+  <footer>
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-logo">
+          <svg width="18" height="18" viewBox="0 0 22 22" fill="none">
+            <path d="M1 11 Q4 4 7 11 Q10 18 13 11 Q16 4 19 11 Q20.5 14 22 11" stroke="var(--accent)" stroke-width="2" fill="none" stroke-linecap="round"/>
+          </svg>
+          Waver
+        </div>
+        <p class="footer-copy">Free and open source. MIT licensed.</p>
+        <div class="footer-links">
+          <a href="https://github.com/gurrish/waver-vst" target="_blank">waver-vst</a>
+          <a href="https://github.com/gurrish/waver" target="_blank">waver (Python CLI)</a>
+          <a href="https://github.com/gurrish" target="_blank">@gurrish</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
