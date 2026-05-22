@@ -193,6 +193,44 @@
     </div>
   </section>
 
+  <!-- ── Listen / Demo ─────────────────────────────────────────────── -->
+  <section id="listen">
+    <div class="container">
+      <div class="section-header">
+        <h2>Hear Waver</h2>
+        <p>Play a short sample and toggle the effect to compare processed (On) vs disabled (Off).</p>
+      </div>
+
+      <div class="listen-grid">
+        <div class="listen-gallery">
+          <img src="images/cubase.png" alt="Cubase screenshot">
+          <img src="images/plugin%20added.png" alt="Plugin screenshot">
+        </div>
+
+        <div class="listen-controls">
+          <div class="audio-controls">
+            <button id="play-btn" class="btn btn-primary">Play</button>
+            <button id="pause-btn" class="btn btn-ghost">Pause</button>
+          </div>
+
+          <div class="effect-toggle">
+            <label style="font-weight:700">Effect</label>
+            <label class="switch">
+              <input type="checkbox" id="effect-toggle">
+              <span class="slider"></span>
+            </label>
+            <span id="effect-label">Off</span>
+          </div>
+
+          <p class="listen-note" style="color:var(--text-2); margin-top:8px;">The demo plays two aligned WAV files (disabled / enabled). Toggle to hear the simulated double-track effect.</p>
+        </div>
+      </div>
+
+      <audio id="audio-off" src="audio/WAVER DISABLED.wav" preload="auto"></audio>
+      <audio id="audio-on" src="audio/WAVER ENABLED.wav" preload="auto"></audio>
+    </div>
+  </section>
+
   <!-- ── How it works ──────────────────────────────────────────────── -->
   <section id="how-it-works">
     <div class="container">

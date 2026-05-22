@@ -70,3 +70,62 @@ document.querySelectorAll('.feature-card, .chain-node, .stat, .param-group').for
   el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
   observer.observe(el);
 });
+
+// ── Listen demo: synced dual-audio toggle (off / on)
+(function () {
+  const aOff = document.getElementById('audio-off');
+  const aOn  = document.getElementById('audio-on');
+  const playBtn = document.getElementById('play-btn');
+  const pauseBtn = document.getElementById('pause-btn');
+  const toggle = document.getElementById('effect-toggle');
+  const label = document.getElementById('effect-label');
+
+  if (!aOff || !aOn || !playBtn || !toggle) return;
+
+  // Start both paused; mute the 'on' version by default
+  aOff.preload = 'auto';
+  aOn.preload  = 'auto';
+  aOff.muted = false;
+  aOn.muted  = true;
+
+  function setEffectState(isOn) {
+    label.textContent = isOn ? 'On' : 'Off';
+    aOn.muted  = !isOn;
+    aOff.muted = isOn;
+    // keep playback positions synced
+    try {
+      if (!isNaN(aOff.currentTime) && !isNaN(aOn.currentTime)) {
+        const t = Math.max(aOff.currentTime, aOn.currentTime);
+        aOff.currentTime = t;
+        aOn.currentTime  = t;
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  toggle.addEventListener('change', (e) => setEffectState(e.target.checked));
+
+  playBtn.addEventListener('click', async () => {
+    try {
+      if (aOff.paused && aOn.paused) {
+        aOff.currentTime = 0;
+        aOn.currentTime  = 0;
+      } else {
+        const t = Math.max(aOff.currentTime, aOn.currentTime);
+        aOff.currentTime = t;
+        aOn.currentTime  = t;
+      }
+      await Promise.all([aOff.play(), aOn.play()]);
+      setEffectState(toggle.checked);
+    } catch (err) {
+      console.warn('Playback failed:', err);
+    }
+  });
+
+  pauseBtn.addEventListener('click', () => {
+    aOff.pause();
+    aOn.pause();
+  });
+
+  aOff.addEventListener('ended', () => aOn.pause());
+  aOn.addEventListener('ended', () => aOff.pause());
+})();
