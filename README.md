@@ -98,7 +98,7 @@ The processor always outputs the wet/processed signal (mono). To create a stereo
 
 ## Download
 
-Pre-built Windows x64 VST3 binaries are available on the [Releases page](https://github.com/gurrish/waver-vst/releases).
+Pre-built Windows x64 VST3 binaries are available on the [Releases page](https://github.com/gurrish/waver-vst/releases). A Cubase sample project for quickly testing Waver is available at https://github.com/gurrish/waver-sample-project — download it and open the project in Cubase to test the plugin.
 
 1. Download `Waver-windows-x64.zip`
 2. Extract `Waver.vst3` to `C:\Program Files\Common Files\VST3\`
