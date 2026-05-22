@@ -12,10 +12,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout WaverProcessor::createParame
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
 
     layout.add (std::make_unique<juce::AudioParameterFloat> ("delay_ms",      "Delay",     msRange,    22.0f));
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("pitch_cents",   "Pitch",     centsRange,  8.0f));
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("drift_ms",      "Drift",     driftRange,  1.8f));
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("mod_scale",     "Modulation", juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f), 1.0f));
-    layout.add (std::make_unique<juce::AudioParameterFloat> ("level_db",      "Level",     levelRange, -1.5f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("pitch_cents",   "Pitch",     centsRange,  2.0f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("drift_ms",      "Drift",     driftRange,  0.0f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("mod_scale",     "Modulation", juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f), 0.0f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> ("level_db",      "Level",     levelRange, 0.0f));
     layout.add (std::make_unique<juce::AudioParameterFloat> ("ir_mix",        "IR Mix",
                     juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f), 0.5f));
     layout.add (std::make_unique<juce::AudioParameterBool>  ("eq_enabled",  "EQ",          true));
