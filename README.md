@@ -36,9 +36,10 @@ The processor always outputs the wet/processed signal (mono). To create a stereo
 | Control | Range | Default | Description |
 |---|---|---|---|
 | **Delay** | 5–40 ms | 22 ms | Base Haas delay of the simulated take |
-| **Pitch** | ±25 ct | +8 ct | Detune of the simulated take in cents |
-| **Drift** | 0–5 ms | 1.8 ms | Depth of random timing variation (500 ms smoothing) |
-| **Level** | −12–+6 dB | −1.5 dB | Level of simulated take relative to original |
+| **Pitch** | ±25 ct | 2.0 ct | Detune of the simulated take in cents |
+| **Drift** | 0–5 ms | 0.00 ms | Depth of random timing variation (500 ms smoothing) |
+| **Modulation** | 0–1 | 0.00 | Modulation scale for delay drift |
+| **Level** | −12–+6 dB | 0.0 dB | Level of simulated take relative to original |
 | **EQ tilt** | on/off | on | −2.5 dB high-shelf cut on wet signal @ 4 kHz |
 
 
