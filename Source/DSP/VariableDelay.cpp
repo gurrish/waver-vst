@@ -45,6 +45,11 @@ void VariableDelay::processBlock (const float* input, float* output, int numSamp
     // Maximum allowed change in delay per sample (in samples) — prevents high-frequency jitter
     const float maxDeltaPerSample = 0.5f; // tweakable
 
+    // Hard floor: delay can never drop below half the base delay.
+    // This prevents the random walk from drifting into comb-filter / flanger territory
+    // when the wet signal is mixed with the dry track in the DAW.
+    const float minDelaySamples = std::max (baseDelaySamples * 0.5f, 4.0f);
+
     for (int i = 0; i < numSamples; ++i)
     {
         buf[writePos] = input[i];
@@ -64,7 +69,7 @@ void VariableDelay::processBlock (const float* input, float* output, int numSamp
         prevAppliedDelay = appliedDelay;
 
         // Prevent reading too-close to the write pointer and reduce high-frequency artifacts
-        output[i] = readInterp (std::max (appliedDelay, 4.0f));
+        output[i] = readInterp (std::max (appliedDelay, minDelaySamples));
     }
 }
 
